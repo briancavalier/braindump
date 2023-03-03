@@ -1,2 +1,3 @@
 # braindump
-A braindump of useful things
+
+A collection of small and hopefully useful things.
