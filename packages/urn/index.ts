@@ -35,7 +35,6 @@ export const rfc8141 =
 
 export type URNScheme = 'urn' | 'URN' | 'Urn' | 'uRn' | 'urN' | 'URn' | 'UrN' | 'uRN'
 
-// prettier-ignore
 export type ParseURN<S extends string> =
   S extends `${URNScheme}:${infer NID}:${infer NSS}?+${infer R}?=${infer Q}#${infer F}` ? URN<NID, NSS, R, Q, F>
   : S extends `${URNScheme}:${infer NID}:${infer NSS}?+${infer R}?=${infer Q}` ? URN<NID, NSS, R, Q, undefined>
@@ -47,7 +46,6 @@ export type ParseURN<S extends string> =
   : S extends `${URNScheme}:${infer NID}:${infer NSS}` ? URN<NID, NSS, undefined, undefined, undefined>
   : URN<string, string, string | undefined, string | undefined, string | undefined> | undefined
 
-// prettier-ignore
 /**
  * Unparse a URN to a valid string representation.
  * Note that {@link parse} and {@link unparse} are inverses for valid URN strings.
@@ -56,7 +54,6 @@ export type ParseURN<S extends string> =
 export const unparse = <U extends URN<string, string, string | undefined, string | undefined, string | undefined>>({ nid, nss, r, q, f }: U): UnparseURN<U> =>
   `urn:${nid}:${nss}${r ? `?+${r}` : ''}${q ? `?=${q}` : ''}${f ? `#${f}` : ''}` as UnparseURN<U>
 
-// prettier-ignore
 export type UnparseURN<U extends URN<string, string, string | undefined, string | undefined, string | undefined>> =
   U extends URN<infer NID extends string, infer NSS extends string, infer R extends string, infer Q extends string, infer F extends string> ? `urn:${NID}:${NSS}?+${R}?=${Q}#${F}`
   : U extends URN<infer NID extends string, infer NSS extends string, infer R extends string, infer Q extends string, undefined> ? `urn:${NID}:${NSS}?+${R}?=${Q}`
