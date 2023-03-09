@@ -1,6 +1,8 @@
 ## Adhoc schemas
 
-Ad hoc schemas are "zero API" schemas based on a simple premise: every value composed of primitive values, objects, and arrays is a schema for itself.
+Ad hoc schemas are "zero API" schemas based on a simple premise:
+
+**Every value composed of primitive values, objects, and arrays is a schema for itself.**
 
 For example:
 
@@ -24,9 +26,9 @@ const encodeResult = encode(s)(s)
 console.log(encodeResult)
 ```
 
-Consequently, literal values, objects, and tuples don't require an API to construct.  This leads to some interesting and natural ways of working with schemas.
+Consequently, literal values, objects, and tuples don't require an API to construct.  They are [_ad hoc_](https://en.wikipedia.org/wiki/Ad_hoc).
 
-They are _ad hoc_.
+This allows working with ad hoc schemas to be very natural.
 
 ### Creating schemas
 
