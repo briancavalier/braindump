@@ -35,15 +35,15 @@ const decodeSchema = <S extends AnySchema>(s: S, x: unknown): Result<any> => {
 }
 
 const decodeRefine = <S extends RefineSchema<AnySchema, any, unknown>>(s: S, x: unknown) => {
-  const rr = decodeSchema(s.schema, x)
-  return isOk(rr) ? s.refine(rr.value)
-    ? ok(rr.value) : unexpected(s, rr.value)
-    : rr
+  const r = decodeSchema(s.schema, x)
+  return isOk(r) ? s.refine(r.value)
+    ? ok(r.value) : unexpected(s, r.value)
+    : r
 }
 
 const decodeMap = <S extends MapSchema<AnySchema, any, any>>(s: S, x: unknown) => {
-  const rr = decodeSchema(s.schema, x)
-  return isOk(rr) ? s.ab(rr.value) : rr
+  const r = decodeSchema(s.schema, x)
+  return isOk(r) ? s.ab(r.value) : r
 }
 
 const decodeTuple = <S extends { readonly [K: number]: AnySchema; readonly length: number }>(s: S, x: unknown) => {

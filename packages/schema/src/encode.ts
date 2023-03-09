@@ -36,8 +36,8 @@ const encodeSchema = <S extends AnySchema>(s: S, a: any): Result<unknown> => {
 }
 
 const encodeMap = <S extends MapSchema<AnySchema, any, any>>(s: S, x: unknown) => {
-  const rr = s.ba(x)
-  return isOk(rr) ? encodeSchema(s.schema, rr.value) : rr
+  const r = s.ba(x)
+  return isOk(r) ? encodeSchema(s.schema, r.value) : r
 }
 
 const encodeTuple = <S extends readonly AnySchema[]>(s: S, x: readonly unknown[]) => {
