@@ -1,63 +1,84 @@
+import { Result } from './result'
+
 export type AnySchema =
-  | number | string | boolean | null | undefined
-  | Schema<unknown>
+  | StructuredSchema
+  | AdhocSchema
+
+type AdhocSchema =
   | { readonly [K in string]: AnySchema }
   | readonly AnySchema[]
 
+type StructuredSchema =
+  | number | string | boolean | null | undefined
+  | UnknownSchema
+  | NumberSchema
+  | StringSchema
+  | BooleanSchema
+  | ArraySchema<unknown>
+  | UnionSchema<unknown>
+  | RefineSchema<AnySchema, any, unknown>
+  | MapSchema<AnySchema, any, any>
+
 export type Infer<S> =
   S extends number | string | boolean | null | undefined ? S
+  : S extends UnionSchema<infer A> ? A
   : S extends Schema<infer A> ? A
   : S extends { readonly [K in string]: AnySchema } ? { readonly [K in keyof S]: Infer<S[K]> }
   : S extends readonly AnySchema[] ? { readonly [K in keyof S]: Infer<S[K]> }
   : unknown
 
 const type = Symbol()
-export const node = Symbol()
+export const name = Symbol()
 
-export interface Schema<T> {
-  readonly [type]?: T,
-  readonly [node]: SchemaNode
+export interface Schema<A> {
+  readonly [type]?: A
+  readonly [name]: string
 }
 
-type SchemaNode =
-  | { readonly name: 'unknown' | 'number' | 'string' | 'boolean' }
-  | ArrayOf<AnySchema>
-  | Union<readonly AnySchema[]>
-  | Refine<any, any, unknown>
+export interface UnknownSchema extends Schema<unknown> { readonly [name]: 'unknown' }
+export interface NumberSchema extends Schema<number> { readonly [name]: 'number' }
+export interface StringSchema extends Schema<string> { readonly [name]: 'string' }
+export interface BooleanSchema extends Schema<boolean> { readonly [name]: 'boolean' }
 
-export const schema = <A>(a: Schema<A>[typeof node]): Schema<A> => ({ [node]: a })
-export const isSchema = (x: unknown): x is Schema<unknown> => x != null && typeof x === 'object' && node in x
+export const isStructuredSchema = (s: AnySchema): s is StructuredSchema => s != null && typeof s === 'object' && name in s
 
-export const unknown = schema<unknown>({ name: 'unknown' })
-export const number = schema<number>({ name: 'number' })
-export const string = schema<string>({ name: 'string' })
-export const boolean = schema<boolean>({ name: 'boolean' })
+export const unknown: UnknownSchema = { [name]: 'unknown' }
+export const number: NumberSchema = { [name]: 'number' }
+export const string: StringSchema = { [name]: 'string' }
+export const boolean: BooleanSchema = { [name]: 'boolean' }
 
-export type ArrayOf<S extends AnySchema> = {
-  readonly name: 'array',
-  readonly schema: S
+export interface ArraySchema<A> extends Schema<A> {
+  readonly [name]: 'array',
+  readonly schema: AnySchema
 }
 
-export const array = <S extends AnySchema>(s: S) => schema<readonly Infer<S>[]>({
-  name: 'array', schema: s
-})
+export const array = <S extends AnySchema>(schema: S): ArraySchema<readonly Infer<S>[]> =>
+  ({ [name]: 'array', schema })
 
-export type Union<Schemas> = {
-  readonly name: 'union',
-  readonly schemas: Schemas
+export interface UnionSchema<A> extends Schema<A> {
+  readonly [name]: 'union',
+  readonly schemas: readonly AnySchema[]
 }
 
-export const union = <Schemas extends [AnySchema, AnySchema, ...readonly AnySchema[]]>(...ss: Schemas) => schema<Infer<Schemas[number]>>({
-  name: 'union', schemas: ss
-})
+export const union = <Schemas extends [AnySchema, AnySchema, ...readonly AnySchema[]]>(...schemas: Schemas): UnionSchema<Infer<Schemas[number]>> =>
+  ({ [name]: 'union', schemas })
 
-export type Refine<Schema, A, B extends A> = {
-  readonly name: 'refine',
-  readonly type: string,
-  readonly schema: Schema,
-  readonly ab: (a: A) => a is B
+export interface RefineSchema<S, A, B extends A> extends Schema<B> {
+  readonly [name]: 'refine',
+  readonly type: string | undefined,
+  readonly schema: S,
+  readonly refine: (a: A) => a is B
 }
 
-export const refine = <A extends Infer<S>, B extends A, S>(type: string, ab: (a: Infer<S>) => a is B, s: S) => schema<B>({
-  name: 'refine', type, schema: s, ab
-})
+export const refine = <A extends Infer<S>, B extends A, S>(schema: S, refine: (a: Infer<S>) => a is B, type?: string): RefineSchema<S, Infer<S>, B> =>
+  ({ [name]: 'refine', type, schema, refine })
+
+export interface MapSchema<S, A, B> extends Schema<B> {
+  readonly [name]: 'map',
+  readonly schema: S,
+  readonly ab: (a: A) => Result<B>,
+  readonly ba: (b: B) => Result<A>
+}
+
+export const map = <A extends Infer<S>, B, S>(schema: S, ab: (a: A) => Result<B>, ba: (b: B) => Result<A>): MapSchema<S, A, B> =>
+  ({ [name]: 'map', schema, ab, ba })

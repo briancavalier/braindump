@@ -6,6 +6,7 @@
     "declaration": true,
     "declarationMap": true,
     "esModuleInterop": true,
+    "exactOptionalPropertyTypes": true,
     "forceConsistentCasingInFileNames": true,
     "importHelpers": true,
     "incremental": true,
