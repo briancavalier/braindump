@@ -2,6 +2,8 @@ import { inspect } from 'node:util'
 
 import { Infer, map, array, decode, encode, isOk, number, ok, string, unexpected, union } from './src'
 
+// derive Date schema from string schema using a
+// partial isomorphism
 const dateSchema = map(string,
   s => {
     const d = new Date(s)
@@ -10,7 +12,8 @@ const dateSchema = map(string,
   d => ok(d.toISOString())
 )
 
-const s = {
+// Schema for a person
+const personSchema = {
   name: string,
   age: number,
   addresses: array({
@@ -20,9 +23,11 @@ const s = {
   dateOfBirth: dateSchema
 }
 
-type Person = Infer<typeof s>
+// Derive a type
+type Person = Infer<typeof personSchema>
 
-const r = decode(s)({
+// Decode
+const r = decode(personSchema)({
   name: 'alice',
   age: 12,
   addresses: [
@@ -34,4 +39,4 @@ const r = decode(s)({
 
 console.log('decoded', inspect(r, { colors: true, depth: Infinity }))
 if(isOk(r))
-  console.log('encoded', inspect(encode(s)(r.value), { colors: true, depth: Infinity }))
+  console.log('encoded', inspect(encode(personSchema)(r.value), { colors: true, depth: Infinity }))
