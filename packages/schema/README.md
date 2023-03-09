@@ -11,7 +11,7 @@ import { decode, encode } from '@braindump/schema'
 
 const s = {
   name: 'Alice'
-}
+} as const
 
 // Use s as a schema to decode s
 const decodeResult = decode(s)(s)
@@ -40,13 +40,13 @@ import { decode, number } from '@braindump/schema'
 const addressSchema = {
   street: string,
   city: string
-}
+} as const
 
 const s = {
   name: 'Alice',
   age: number,
   address: addressSchema
-}
+} as const
 
 // Use s as a schema to decode s
 const result = decode(s)({
@@ -78,12 +78,12 @@ import { decode } from '@braindump/schema'
 
 const personSchema = {
   name: string
-}
+} as const
 
 const personWithAgeSchema = {
   ...personSchema,
   age: number
-}
+} as const
 
 const result = decode(personWithAgeSchema)({
   name: 'Alice',
@@ -124,12 +124,12 @@ import { number, union } from '@braindump/schema'
 const circleSchema = {
   kind: 'circle',
   radius: number
-}
+} as const
 
 const squareSchema = {
-  kind: 'square'
+  kind: 'square',
   sideLength: number
-}
+} as const
 
 const shapeSchema = union(circleSchema, squareSchema)
 
