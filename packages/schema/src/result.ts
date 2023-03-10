@@ -1,6 +1,6 @@
 export type Result<A> = Ok<A> | Fail
 
-export type Ok<A> = { tag: 'ok', value: A }
+export type Ok<A> = { readonly tag: 'ok', readonly value: A }
 
 export const ok = <A>(value: A) => ({ tag: 'ok', value }) as const
 export const isOk = <A>(r: Result<A>): r is Ok<A> => r.tag === 'ok'
