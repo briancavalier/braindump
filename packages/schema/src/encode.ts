@@ -1,5 +1,5 @@
 import { all, any, at, Fail, isOk, ok, Result, unexpected } from './result'
-import { AnySchema, ArraySchema, isStructuredSchema, Infer, MapSchema, name, UnionSchema } from './schema'
+import { AnySchema, ArraySchema, isStructuredSchema, Infer, MapSchema, name, UnionSchema, RecordSchema } from './schema'
 
 export const encode = <S extends AnySchema>(s: S) => (a: Infer<S>): Result<unknown> =>
   // Typing`a` as Infer<S> here or in encodeSchema causes
@@ -8,7 +8,7 @@ export const encode = <S extends AnySchema>(s: S) => (a: Infer<S>): Result<unkno
   // @ts-ignore
   encodeSchema(s, a)
 
-const encodeSchema = <S extends AnySchema>(s: S, a: any): Result<unknown> => {
+const encodeSchema = (s: AnySchema, a: any): Result<unknown> => {
   if (s == null || typeof s === 'number' || typeof s === 'string' || typeof s === 'boolean') {
     return a === s ? ok(a) : unexpected(s, a)
   } else if (Array.isArray(s)) {
@@ -26,6 +26,8 @@ const encodeSchema = <S extends AnySchema>(s: S, a: any): Result<unknown> => {
       return ok(a)
     case 'array':
       return encodeArray(s, a)
+    case 'record':
+      return encodeRecord(s, a)
     case 'union':
       return encodeUnion(s, a)
     case 'refine':
@@ -63,6 +65,22 @@ const encodeArray = <S extends ArraySchema<unknown>>(s: S, x: readonly unknown[]
     else ar[i] = ri.value
   }
   return errors.length === 0 ? ok(ar) : all('array', errors)
+}
+
+const encodeRecord = <S extends RecordSchema<PropertyKey, unknown>>(s: S, x: unknown) => {
+  if (!x || typeof x !== 'object') return unexpected(s, x)
+  const r = {} as Record<PropertyKey, unknown>
+  const errors = [] as Fail[]
+
+  const o = x as Record<PropertyKey, unknown>
+  for (const k of Object.keys(o)) {
+    const rk = encodeSchema(s.keys as AnySchema, k)
+    const rv = encodeSchema(s.values, o[k])
+    if (isOk(rk) && isOk(rv)) r[rk.value as PropertyKey] = rv.value
+    if (!isOk(rk)) errors.push(at(k, rk))
+    if (!isOk(rv)) errors.push(at(k, rv))
+  }
+  return errors.length === 0 ? ok(r) : all('array', errors)
 }
 
 const encodeObject = <S extends Record<string, AnySchema>>(s: S, x: Record<string, unknown>) => {

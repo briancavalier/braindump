@@ -5,16 +5,17 @@ export type AnySchema =
   | AdhocSchema
 
 type AdhocSchema =
+  | number | string | boolean | null | undefined
   | { readonly [K in string]: AnySchema }
   | readonly AnySchema[]
 
 type StructuredSchema =
-  | number | string | boolean | null | undefined
   | UnknownSchema
   | NumberSchema
   | StringSchema
   | BooleanSchema
   | ArraySchema<unknown>
+  | RecordSchema<PropertyKey, unknown>
   | UnionSchema<unknown>
   | RefineSchema<AnySchema, any, unknown>
   | MapSchema<AnySchema, any, any>
@@ -54,6 +55,17 @@ export interface ArraySchema<A> extends Schema<A> {
 
 export const array = <S extends AnySchema>(schema: S): ArraySchema<readonly Infer<S>[]> =>
   ({ [name]: 'array', schema })
+
+type KeySchema = string | Schema<string>
+
+export interface RecordSchema<K extends PropertyKey, V> extends Schema<Readonly<Record<K, V>>> {
+  readonly [name]: 'record',
+  readonly keys: KeySchema
+  readonly values: AnySchema
+}
+
+export const record = <K extends KeySchema, V extends AnySchema>(keys: K, values: V): RecordSchema<Infer<K>, Infer<V>> =>
+  ({ [name]: 'record', keys, values })
 
 export interface UnionSchema<A> extends Schema<A> {
   readonly [name]: 'union',

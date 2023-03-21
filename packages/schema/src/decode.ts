@@ -1,10 +1,10 @@
 import { Result, ok, unexpected, isOk, Fail, at, all, missing, any } from './result'
-import { AnySchema, ArraySchema, Infer, isStructuredSchema, name, RefineSchema, UnionSchema, MapSchema } from './schema'
+import { AnySchema, ArraySchema, Infer, isStructuredSchema, name, RefineSchema, UnionSchema, MapSchema, RecordSchema } from './schema'
 
 export const decode = <S extends AnySchema>(s: S) => (x: unknown): Result<Infer<S>> =>
   decodeSchema(s, x)
 
-const decodeSchema = <S extends AnySchema>(s: S, x: unknown): Result<any> => {
+const decodeSchema = (s: AnySchema, x: unknown): Result<any> => {
   if (s == null || typeof s === 'number' || typeof s === 'string' || typeof s === 'boolean') {
     return x === s ? ok(x) : unexpected(s, x)
   } else if (Array.isArray(s)) {
@@ -25,6 +25,8 @@ const decodeSchema = <S extends AnySchema>(s: S, x: unknown): Result<any> => {
       return typeof x === 'boolean' ? ok(x) : unexpected(s, x)
     case 'array':
       return decodeArray(s, x)
+    case 'record':
+      return decodeRecord(s, x)
     case 'union':
       return decodeUnion(s, x)
     case 'refine':
@@ -68,6 +70,22 @@ const decodeArray = <S extends ArraySchema<unknown>>(s: S, x: unknown) => {
     else ar[i] = ri.value
   }
   return errors.length === 0 ? ok(ar) : all('array', errors)
+}
+
+const decodeRecord = <S extends RecordSchema<PropertyKey, unknown>>(s: S, x: unknown) => {
+  if (!x || typeof x !== 'object') return unexpected(s, x)
+  const r = {} as Record<PropertyKey, unknown>
+  const errors = [] as Fail[]
+
+  const o = x as Record<PropertyKey, unknown>
+  for (const k of Object.keys(o)) {
+    const rk = decodeSchema(s.keys as AnySchema, k)
+    const rv = decodeSchema(s.values, o[k])
+    if(isOk(rk) && isOk(rv)) r[rk.value] = rv.value
+    if (!isOk(rk)) errors.push(at(k, rk))
+    if (!isOk(rv)) errors.push(at(k, rv))
+  }
+  return errors.length === 0 ? ok(r) : all('array', errors)
 }
 
 const decodeObject = <S extends { readonly [K in string]: AnySchema }>(s: S, x: unknown) => {
