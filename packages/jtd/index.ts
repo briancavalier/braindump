@@ -32,7 +32,7 @@ type InferParsed<S, Definitions extends Record<string, unknown>> =
   S extends Int | Float ? number
   : S extends Str ? string
   : S extends Bool ? boolean
-  : S extends Timestamp ? Date
+  : S extends Timestamp ? string
   : S extends Enum ? S['enum'][number]
   : S extends Elements ? readonly (ParsedNullable<S['elements'], Definitions>)[]
   : S extends Properties ? { [K in keyof S['properties']]: ParsedNullable<S['properties'][K], Definitions> }
