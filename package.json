@@ -31,6 +31,7 @@
     "packages/set",
     "packages/map",
     "packages/urn",
-    "packages/schema"
+    "packages/schema",
+    "packages/jtd"
   ]
 }
