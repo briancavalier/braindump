@@ -24,7 +24,7 @@ const person = {
 
 type Person = Parsed<typeof person>
 
-const ajv = new Ajv({ removeAdditional: true })
+const ajv = new Ajv()
 const personParser = parser(ajv, person)
 
 const maybePerson = JSON.stringify({
