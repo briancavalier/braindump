@@ -12,18 +12,10 @@ export type Result<A> =
   | Readonly<{ ok: true, value: A }>
   | Readonly<{ ok: false, input: string, position?: number | undefined, message?: string | undefined }>
 
-export const parser = <S extends Schema>(s: S) => {
-  const p = defaultCompiler().compileParser(s) as JTDParser<Parsed<S>>
-  return (input: string): Result<Parsed<S>> => {
-    const result = p(input)
-    return result === undefined
-      ? { ok: false, position: p.position, message: p.message, input }
-      : { ok: true, value: result }
-  }
+export interface Parser<In, Out> {
+  parse: (input: In) => Result<Out>
+  unparse: (x: Out) => In
 }
-
-export const serializer = <S extends Schema>(s: S): <T extends Parsed<S>>(x: T) => string =>
-  defaultCompiler().compileSerializer(s)
 
 type ParsedNullable<S, Definitions extends Record<string, unknown>> =
   S extends { readonly nullable: true } ? (InferParsed<S, Definitions> | null) : InferParsed<S, Definitions>
@@ -78,7 +70,17 @@ type Empty = {
 
 type Ref = { readonly ref: string }
 
-let compiler: Ajv | undefined = undefined
-
-export const defaultCompiler = (): Ajv =>
-  compiler ?? (compiler = new Ajv()) as any
+export const parser = <S extends Schema>(a: Ajv, s: S): Parser<string, Parsed<Schema>> => {
+  // Memoized compiled parsers
+  let p: JTDParser<Parsed<Schema>>
+  let u: (o: Parsed<Schema>) => string
+  return {
+    parse: input => {
+      const result = (p ?? (p = a.compileParser(s)))(input)
+      return result === undefined
+        ? { ok: false, position: p.position, message: p.message, input }
+        : { ok: true, value: result }
+    },
+    unparse: x => (u ?? (u = a.compileSerializer(s)))(x)
+  }
+}
