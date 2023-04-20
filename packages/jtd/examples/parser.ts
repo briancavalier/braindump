@@ -1,7 +1,7 @@
 import Ajv from 'ajv/dist/jtd'
 
-import { parser } from '../parser'
-import { Parsed } from '../schema'
+import { parser } from '../ajv'
+import { Parsed } from '../index'
 
 const address = {
     properties: {
@@ -43,7 +43,7 @@ const result = personParser.parse(maybePerson)
 console.log(result)
 if(result.ok) {
   console.log(personParser.unparse(result.value))
-  // Unparsing strips removes properties, unlike JSON.stringify
+  // Unparsing removes unknown properties, unlike JSON.stringify
   console.log(personParser.unparse({ ...result.value, extraProperty: 'will be removed by unparse' } ))
 
   // Type error. Values not corresponding to the parser's schema are disallowed

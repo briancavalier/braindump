@@ -6,5 +6,10 @@
   },
   "include": [
     "."
+  ],
+  "exclude": [
+    "examples/",
+    "node_modules/",
+    "dist/"
   ]
 }
