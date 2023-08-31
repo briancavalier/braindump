@@ -18,7 +18,7 @@ export const Variant = <const T>(t: T) => class Value<A> implements Variant<T, A
   }
 }
 
-export const match = <V extends Variant<unknown, unknown>, M extends Matcher<V> & Record<string, (x: any) => unknown>>(v: V, m: M): ReturnType<M[keyof M]> =>
+export const match = <V extends Variant<unknown, unknown>, M extends Matcher<V>>(v: V, m: M): ReturnType<M[keyof M]> =>
   m[v.tag as keyof M](v.value) as ReturnType<M[keyof M]>
 
 export type Matcher<V> = U2I<Matchers<V>>
