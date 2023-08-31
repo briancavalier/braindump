@@ -3,6 +3,14 @@ export interface Variant<T, A> {
   readonly value: A
 }
 
+/**
+ * Create a new variant discriminated by T
+ * @example
+ * class Left<A> extends Variant('left')<A> { }
+ * class Right<A> extends Variant('right')<A> { }
+ *
+ * type Either<E, A> = Left<E> | Right<A>
+ */
 export const Variant = <const T>(t: T) => class Value<A> implements Variant<T, A> {
   readonly tag = t
   static readonly tag = t
@@ -18,6 +26,23 @@ export const Variant = <const T>(t: T) => class Value<A> implements Variant<T, A
   }
 }
 
+/**
+ * Exhaustive case analysis
+ * @example
+ * class Left<A> extends Variant('left')<A> { }
+ * class Right<A> extends Variant('right')<A> { }
+ *
+ * type Either<E, A> = Left<E> | Right<A>
+ *
+ * const t = Right.of('yay') as Either<string, string>
+ *
+ * const r = match(t, {
+ *   left: x => `Left: ${x}`
+ *   right: x => `Right: ${x}`
+ * })
+ *
+ * console.lor(r) // 'Right: yay'
+ */
 export const match = <V extends Variant<unknown, unknown>, M extends Matcher<V>>(v: V, m: M): ReturnType<M[keyof M]> =>
   m[v.tag as keyof M](v.value) as ReturnType<M[keyof M]>
 

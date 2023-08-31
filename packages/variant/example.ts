@@ -4,7 +4,7 @@ import { Variant, match } from './src'
 class Left<A> extends Variant('left')<A> { }
 class Right<A> extends Variant('right')<A> { }
 
-// Variants are open: new types can be created from variants
+// Variants are open: new types can be created with variant unions
 type Either<E, A> = Left<E> | Right<A>
 
 const e = Right.of(123) as Either<string, number>
@@ -14,7 +14,7 @@ if(Right.is(e)) e
 else e
 
 const f = <E, A>(x: Either<E, A>) => {
-  // "pattern matching" via switch
+  // case analysis via switch
   switch(x.tag) {
     case 'left':
       return console.log('Got left', x.value)
