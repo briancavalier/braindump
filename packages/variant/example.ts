@@ -4,9 +4,17 @@ import { Variant } from './src'
 class Left<A> extends Variant('left')<A> { }
 class Right<A> extends Variant('right')<A> { }
 
+// Variants are open: new types can be created from variants
 type Either<E, A> = Left<E> | Right<A>
 
+const e: Either<string, number> = Right.of(123)
+
+// Recover variants using .is
+if(Right.is(e)) e
+else e
+
 const f = <E, A>(x: Either<E, A>) => {
+  // "pattern matching" via switch
   switch(x.tag) {
     case 'left':
       return console.log('Got left', x.value)
@@ -17,6 +25,7 @@ const f = <E, A>(x: Either<E, A>) => {
 
 f(Right.of('hi'))
 
+// Either is also open, and can be further composed with new variants
 class Center<A> extends Variant('center')<A> {}
 
 type TriState<E, A, B> = Either<E, A> | Center<B>
@@ -35,3 +44,9 @@ const g = <E, A, B>(x: TriState<E, A, B>) => {
 }
 
 g(Center.of(123))
+
+const t: TriState<string, number, boolean> = Center.of(true)
+
+if (Right.is(t)) t
+else if (Left.is(t)) t
+else t
