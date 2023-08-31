@@ -1,4 +1,4 @@
-import { Variant } from './src'
+import { Variant, match } from './src'
 
 // Build a simple Either type from Left and Right variants
 class Left<A> extends Variant('left')<A> { }
@@ -7,7 +7,7 @@ class Right<A> extends Variant('right')<A> { }
 // Variants are open: new types can be created from variants
 type Either<E, A> = Left<E> | Right<A>
 
-const e: Either<string, number> = Right.of(123)
+const e = Right.of(123) as Either<string, number>
 
 // Recover variants using .is
 if(Right.is(e)) e
@@ -45,8 +45,15 @@ const g = <E, A, B>(x: TriState<E, A, B>) => {
 
 g(Center.of(123))
 
-const t: TriState<string, number, boolean> = Center.of(true)
+const t = Center.of(true) as TriState<string, number, boolean>
 
 if (Right.is(t)) t
 else if (Left.is(t)) t
 else t
+
+// Case analysis with match()
+const r = match(t, {
+  left: x => x.length,
+  right: x => x,
+  center: x => x ? 1 : 0
+})
