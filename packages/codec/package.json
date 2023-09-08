@@ -1,0 +1,22 @@
+{
+  "name": "@braindump/codec",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist/*.js",
+    "dist/*.d.ts",
+    "dist/*.map"
+  ],
+  "devDependencies": {},
+  "scripts": {
+    "build": "tsc --build",
+    "lint": "eslint *.ts --fix",
+    "test": "node --test -r esbuild-register ./*.test.ts | tap-arc",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT"
+}

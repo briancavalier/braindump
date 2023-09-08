@@ -34,6 +34,7 @@
     "packages/urn",
     "packages/schema",
     "packages/jtd",
-    "packages/variant"
+    "packages/variant",
+    "packages/codec"
   ]
 }
