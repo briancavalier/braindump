@@ -4,7 +4,7 @@ import { isOk, string, encode, number, fromSchema, json, pipe, decode, refine, J
 
 type ISODateTime = string & { readonly format: 'rfc3339' }
 export const isoDateTime = refine((s: string): s is ISODateTime =>
-  Number.isNaN(new Date(s).getTime()))
+  !Number.isNaN(new Date(s).getTime()))
 
 const person = {
   name: string,
@@ -17,6 +17,8 @@ const request = {
     date: isoDateTime
   }
 } as const
+
+console.log(inspect(request, false, Infinity))
 
 type Request = Decoded<typeof request>
 

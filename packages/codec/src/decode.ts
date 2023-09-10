@@ -6,8 +6,8 @@ import { ArraySchema, UnionSchema, Schema, isNamedSchema, Decoded, Encoded } fro
 export const decode = <const S>(s: S) => (x: Encoded<S>): Ok<Decoded<S>> | Fail =>
   _decode(s as Schema, x)
 
-const _decode = (s: Schema, x: unknown): any => {
-  if (s == null || typeof s === 'number' || typeof s === 'string' || typeof s === 'boolean' === x)
+const _decode = (s: Schema, x: unknown): Ok<any> | Fail => {
+  if (s == null || typeof s === 'number' || typeof s === 'string' || typeof s === 'boolean')
     return s === x ? ok(x) : unexpected(s, x)
 
   if (Array.isArray(s))
@@ -20,9 +20,9 @@ const _decode = (s: Schema, x: unknown): any => {
       case 'boolean':
         return s[name] === typeof x ? ok(x) : unexpected(s, x)
       case 'array':
-        return Array.isArray(x) ? decodeArray(s as any, x) as any : unexpected(s, x)
+        return Array.isArray(x) ? decodeArray(s as ArraySchema<Schema>, x) : unexpected(s, x)
       case 'union':
-        return decodeUnion(s, x) as any
+        return decodeUnion(s as UnionSchema<readonly Schema[]>, x)
       case 'refine':
         return s.refine(x) ? ok(x) : unexpected(s, x)
       case 'map':
@@ -38,7 +38,9 @@ const _decode = (s: Schema, x: unknown): any => {
   }
 
   if (s && typeof s === 'object')
-    return x && typeof x === 'object' ? decodeRecord(s as Record<string, Schema>, x as Record<string, unknown>) as any : unexpected(s, x)
+    return x && typeof x === 'object'
+      ? decodeRecord(s as Record<string, Schema>, x as Record<string, unknown>)
+      : unexpected(s, x)
 
   return unexpected(s, x)
 }
@@ -47,22 +49,22 @@ const decodeArray = <S extends ArraySchema<Schema>>(s: S, x: readonly unknown[])
   const a = []
   const e = []
   for (let i = 0; i < x.length; i++) {
-    const r = _decode(s.itemSchema as any, x[i] as any)
+    const r = _decode(s.itemSchema, x[i])
     if (!isOk(r)) e.push(at(i, r))
     else a[i] = r.value
   }
-  return e.length === 0 ? ok(a) as any : all(x, e)
+  return e.length === 0 ? ok(a) : all(x, e)
 }
 
 const decodeTuple = <S extends readonly Schema[]>(s: S, x: readonly unknown[]) => {
   const a = []
   const e = []
   for (let i = 0; i < x.length; i++) {
-    const r = _decode(s[i] as any, x[i] as any)
+    const r = _decode(s[i], x[i])
     if (!isOk(r)) e.push(at(i, r))
     else a[i] = r.value
   }
-  return e.length === 0 ? ok(a) as any : all(x, e)
+  return e.length === 0 ? ok(a) : all(x, e)
 }
 
 const decodeRecord = <S extends Record<string, Schema>>(s: S, x: Record<string, unknown>) => {
@@ -71,20 +73,20 @@ const decodeRecord = <S extends Record<string, Schema>>(s: S, x: Record<string, 
   for (const k of Object.keys(s)) {
     if (!(k in x)) e.push(at(k, missing(s[k])))
     else {
-      const r = _decode(s[k] as any, x[k] as any)
+      const r = _decode(s[k], x[k])
       if (!isOk(r)) e.push(at(k, r))
       else a[k] = r.value
     }
   }
-  return e.length === 0 ? ok(a) as any : all(x, e)
+  return e.length === 0 ? ok(a) : all(x, e)
 }
 
-const decodeUnion = <S extends UnionSchema<readonly unknown[]>>(s: S, x: unknown) => {
+const decodeUnion = <S extends UnionSchema<readonly Schema[]>>(s: S, x: unknown) => {
   const e = []
   for (let i = 0; i < s.schemas.length; i++) {
-    const r = _decode(s.schemas[i] as any, x)
+    const r = _decode(s.schemas[i], x)
     if (isOk(r)) return r
     e.push(r)
   }
-  return none(x, e) as any
+  return none(x, e)
 }

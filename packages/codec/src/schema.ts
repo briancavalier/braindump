@@ -14,14 +14,14 @@ export interface ArraySchema<Schema> {
   readonly itemSchema: Schema
 }
 
-export const array = <const Schema>(itemSchema: Schema): ArraySchema<Schema> => ({ [name]: 'array', itemSchema })
+export const array = <const S extends Schema>(itemSchema: S): ArraySchema<S> => ({ [name]: 'array', itemSchema })
 
 export interface UnionSchema<Schemas extends readonly unknown[]> {
   readonly [name]: 'union',
   readonly schemas: Schemas
 }
 
-export const union = <const Schemas extends readonly [unknown, unknown, ...readonly unknown[]]>(...schemas: Schemas): UnionSchema<Schemas> => ({ [name]: 'union', schemas })
+export const union = <const Schemas extends readonly [Schema, Schema, ...readonly Schema[]]>(...schemas: Schemas): UnionSchema<Schemas> => ({ [name]: 'union', schemas })
 
 export const fromSchema = <const S extends Schema>(schema: S): SchemaCodec<S, Encoded<S>, Decoded<S>> => ({ [name]: 'schema', schema })
 
@@ -45,7 +45,7 @@ export type Decoded<S> =
   : S extends StringSchema ? string
   : S extends BooleanSchema ? boolean
   : S extends ArraySchema<infer Schema> ? readonly Decoded<Schema>[]
-  : S extends UnionSchema<infer Schemas extends readonly unknown[]> ? Decoded<Schemas[number]>
+  : S extends UnionSchema<infer Schemas> ? Decoded<Schemas[number]>
   : S extends RefineCodec<any, infer B> ? B
   : S extends Codec<any, infer B> ? B
   : S extends readonly Schema[] ? { readonly [K in keyof S]: Decoded<S[K]> }
