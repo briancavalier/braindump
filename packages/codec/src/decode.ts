@@ -34,7 +34,7 @@ const _decode = (s: Schema, x: unknown): Ok<any> | Fail => {
           isOk(r) ? _decode(codec, r.value) : r, ok(x))
       case 'schema':
         return _decode(s.schema as Schema, x)
-      }
+    }
   }
 
   if (s && typeof s === 'object')

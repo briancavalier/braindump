@@ -14,7 +14,8 @@ const person = {
 const request = {
   body: pipe(json, refine((x: Json): x is { readonly [k: string]: Json } => !!x && typeof x === 'object'), fromSchema(person)),
   queryStringParameters: {
-    date: isoDateTime
+    date: isoDateTime,
+    max: number
   }
 } as const
 
