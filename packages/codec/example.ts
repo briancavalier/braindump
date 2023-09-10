@@ -1,15 +1,10 @@
 import { inspect } from 'node:util'
 
-import { isOk, ok, codec, decode, pipe, string, encode, unexpected, number } from './src'
-import { jsonCodec } from './src/json'
+import { isOk, string, encode, number, schemaCodec, json, pipe, decode, refine, Json, Decoded } from './src'
 
-export const date = pipe(string, codec(
-  (s: string) => {
-    const d = new Date(s)
-    return Number.isNaN(d.getTime()) ? unexpected('date', s) : ok(d)
-  },
-  (d: Date) => ok(d.toISOString())
-))
+type ISODateTime = string & { readonly format: 'rfc3339' }
+export const isoDateTime = refine((s: string): s is ISODateTime =>
+  Number.isNaN(new Date(s).getTime()))
 
 const person = {
   name: string,
@@ -17,11 +12,13 @@ const person = {
 } as const
 
 const request = {
-  body: jsonCodec(person),
+  body: pipe(json, refine((x: Json): x is { readonly [k: string]: Json } => !!x && typeof x === 'object'), schemaCodec(person)),
   queryStringParameters: {
-    date: date
+    date: isoDateTime
   }
 } as const
+
+type Request = Decoded<typeof request>
 
 const req = {
   body: JSON.stringify({ name: 'Dennis', age: 37 }),
