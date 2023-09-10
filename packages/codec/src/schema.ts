@@ -23,7 +23,7 @@ export interface UnionSchema<Schemas extends readonly unknown[]> {
 
 export const union = <const Schemas extends readonly [unknown, unknown, ...readonly unknown[]]>(...schemas: Schemas): UnionSchema<Schemas> => ({ [name]: 'union', schemas })
 
-export const schemaCodec = <const S extends Schema>(schema: S): SchemaCodec<S, Encoded<S>, Decoded<S>> => ({ [name]: 'schema', schema })
+export const fromSchema = <const S extends Schema>(schema: S): SchemaCodec<S, Encoded<S>, Decoded<S>> => ({ [name]: 'schema', schema })
 
 export type Schema =
   | number | string | boolean | null | undefined
