@@ -17,20 +17,20 @@ export interface RefineCodec<A, B extends A> {
 export const refine = <A, B extends A>(refine: (a: A) => a is B): RefineCodec<A, B> => ({ [name]: 'refine', refine })
 
 export interface TotalCodec<A, B> {
-  readonly [name]: 'map',
+  readonly [name]: 'total',
   readonly ab: (a: A) => B,
   readonly ba: (b: B) => A
 }
 
-export const map = <A, B>(ab: (a: A) => B, ba: (b: B) => A): TotalCodec<A, B> => ({ [name]: 'map', ab, ba })
+export const map = <A, B>(ab: (a: A) => B, ba: (b: B) => A): TotalCodec<A, B> => ({ [name]: 'total', ab, ba })
 
 export interface PartialCodec<A, B> {
-  readonly [name]: 'codec',
+  readonly [name]: 'partial',
   readonly decode: (a: A) => Ok<B> | Fail,
   readonly encode: (b: B) => Ok<A> | Fail
 }
 
-export const codec = <A, B>(ab: (a: A) => Ok<B> | Fail, ba: (b: B) => Ok<A> | Fail): PartialCodec<A, B> => ({ [name]: 'codec', decode: ab, encode: ba })
+export const codec = <A, B>(ab: (a: A) => Ok<B> | Fail, ba: (b: B) => Ok<A> | Fail): PartialCodec<A, B> => ({ [name]: 'partial', decode: ab, encode: ba })
 
 export interface SchemaCodec<S, in out A, in out B> {
   readonly [name]: 'schema',
@@ -41,7 +41,9 @@ export interface SchemaCodec<S, in out A, in out B> {
 
 export interface PipeCodec<in out A, in out B> {
   readonly [name]: 'pipe',
-  readonly codecs: readonly [Codec<A, any>, ...readonly Codec<any, any>[], Codec<any, B>]
+  readonly _a?: A,
+  readonly _b?: B,
+  readonly codecs: readonly Codec<any, any>[]
 }
 
 export const pipe: {

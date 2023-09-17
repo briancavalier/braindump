@@ -1,6 +1,6 @@
 import { inspect } from 'node:util'
 
-import { isOk, string, encode, number, fromSchema, json, pipe, decode, refine, Json, Decoded } from './src'
+import { isOk, string, encode, number, json, decode, refine, Decoded } from './src'
 
 type ISODateTime = string & { readonly format: 'rfc3339' }
 export const isoDateTime = refine((s: string): s is ISODateTime =>
@@ -12,21 +12,20 @@ const person = {
 } as const
 
 const request = {
-  body: pipe(json, refine((x: Json): x is { readonly [k: string]: Json } => !!x && typeof x === 'object'), fromSchema(person)),
+  body: json(person),
   queryStringParameters: {
     date: isoDateTime,
     max: number
   }
-} as const
-
-console.log(inspect(request, false, Infinity))
+}
 
 type Request = Decoded<typeof request>
 
 const req = {
   body: JSON.stringify({ name: 'Dennis', age: 37 }),
   queryStringParameters: {
-    date: new Date().toISOString()
+    date: new Date().toISOString(),
+    max: 2
   }
 }
 
