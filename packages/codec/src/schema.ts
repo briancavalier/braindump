@@ -33,6 +33,17 @@ export interface UnionSchema<Schemas extends readonly unknown[]> {
 
 export const union = <const Schemas extends readonly [Schema, Schema, ...readonly Schema[]]>(...schemas: Schemas): UnionSchema<Schemas> => ({ [name]: 'union', schemas })
 
+export interface Optional<S, A> {
+  readonly [name]: 'optional',
+  readonly schema: S,
+  readonly defaultValue: A
+}
+
+export const optional: {
+  <S extends Schema, const A>(schema: S, defaultValue: A): Optional<S, A>,
+  <S extends Schema>(schema: S): Optional<S, undefined>
+} = (schema: Schema, defaultValue?: unknown): Optional<Schema, any> => ({ [name]: 'optional', schema, defaultValue })
+
 export const fromSchema = <const S extends Schema>(schema: S): SchemaCodec<S, Encoded<S>, Decoded<S>> => ({ [name]: 'schema', schema })
 
 export type Schema =
@@ -43,6 +54,7 @@ export type Schema =
 
 export type NamedSchema =
   | NumberSchema | StringSchema | BooleanSchema
+  | Optional<unknown, any>
   | ArraySchema<unknown>
   | RecordSchema<string | StringSchema, unknown>
   | UnionSchema<readonly unknown[]>
@@ -55,6 +67,7 @@ export type Decoded<S> =
   : S extends NumberSchema ? number
   : S extends StringSchema ? string
   : S extends BooleanSchema ? boolean
+  : S extends Optional<infer S, infer A> ? Decoded<S> | A
   : S extends ArraySchema<infer Schema> ? readonly Decoded<Schema>[]
   : S extends RecordSchema<infer K extends PropertyKeySchema, infer V> ? Record<Decoded<K>, Decoded<V>>
   : S extends UnionSchema<infer Schemas> ? Decoded<Schemas[number]>
@@ -66,6 +79,7 @@ export type Decoded<S> =
 
 export type Encoded<S> =
   S extends number | string | boolean | null | undefined | NumberSchema | StringSchema | BooleanSchema ? unknown
+  : S extends Optional<infer S, unknown> ? Encoded<S> | undefined
   : S extends ArraySchema<unknown> ? readonly unknown[]
   : S extends RecordSchema<string, infer V> ? Record<string, Encoded<V>>
   : S extends UnionSchema<infer Schemas extends readonly Schema[]> ? Encoded<Schemas[number]>

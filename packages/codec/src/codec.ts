@@ -50,4 +50,4 @@ export const pipe: {
   <A, B, Z>(ab: Codec<A, B>, bz: Codec<B, Z>): PipeCodec<A, Z>,
   <A, B, C, Z>(ab: Codec<A, B>, bc: Codec<B, C>, cz: Codec<C, Z>): PipeCodec<A, Z>,
   <A, B, C, D, Z>(ab: Codec<A, B>, bc: Codec<B, C>, cd: Codec<C, D>, dz: Codec<D, Z>): PipeCodec<A, Z>,
-} = (...codecs: any) => ({ [name]: 'pipe', codecs }) as const
+} = (...codecs: readonly Codec<any, any>[]) => ({ [name]: 'pipe', codecs }) as const

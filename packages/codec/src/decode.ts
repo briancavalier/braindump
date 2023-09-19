@@ -15,6 +15,9 @@ const _decode = (s: Schema, x: unknown): Ok<any> | Fail => {
 
   if (isNamedSchema(s)) {
     switch (s[name]) {
+      case 'optional':
+        return x === undefined ? ok(s.defaultValue)
+          : _decode(s.schema as Schema, x)
       case 'number':
       case 'string':
       case 'boolean':
@@ -88,12 +91,9 @@ const decodeProperties = <S extends Record<string, Schema>>(s: S, x: Record<stri
   const a = {} as Record<string, unknown>
   const e = []
   for (const k of Object.keys(s)) {
-    if (!(k in x)) e.push(at(k, missing(s[k])))
-    else {
-      const r = _decode(s[k], x[k])
-      if (!isOk(r)) e.push(at(k, r))
-      else a[k] = r.value
-    }
+    const r = _decode(s[k], x[k])
+    if (!isOk(r)) e.push(k in x ? at(k, r) : at(k, missing(s[k])))
+    else a[k] = r.value
   }
   return e.length === 0 ? ok(a) : all(x, e)
 }

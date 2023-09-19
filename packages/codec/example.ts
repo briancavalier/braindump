@@ -1,6 +1,6 @@
 import { inspect } from 'node:util'
 
-import { isOk, string, encode, number, json, decode, refine, Decoded } from './src'
+import { isOk, string, encode, number, json, decode, refine, Decoded, optional } from './src'
 
 type ISODateTime = string & { readonly format: 'rfc3339' }
 export const isoDateTime = refine((s: string): s is ISODateTime =>
@@ -15,7 +15,7 @@ const request = {
   body: json(person),
   queryStringParameters: {
     date: isoDateTime,
-    max: number
+    max: optional(number, 1)
   }
 }
 
@@ -25,7 +25,7 @@ const req = {
   body: JSON.stringify({ name: 'Dennis', age: 37 }),
   queryStringParameters: {
     date: new Date().toISOString(),
-    max: 2
+    // max: 2
   }
 }
 

@@ -15,6 +15,10 @@ const _encode = (s: Schema, x: unknown): Ok<any> | Fail => {
 
   if (isNamedSchema(s)) {
     switch (s[name]) {
+      case 'optional': {
+        const r = _encode(s.schema as Schema, x)
+        return isOk(r) ? r : ok(undefined)
+      }
       case 'number':
       case 'string':
       case 'boolean':
@@ -89,12 +93,9 @@ const encodeProperties = <S extends Record<string, Schema>>(s: S, x: Record<stri
   const a = {} as Record<string, unknown>
   const e = []
   for (const k of Object.keys(s)) {
-    if (!(k in x)) e.push(at(k, missing(s[k])))
-    else {
-      const r = _encode(s[k], x[k])
-      if (!isOk(r)) e.push(at(k, r))
-      else a[k] = r.value
-    }
+    const r = _encode(s[k], x[k])
+    if (!isOk(r)) e.push(k in x ? at(k, r) : at(k, missing(s[k])))
+    else a[k] = r.value
   }
   return e.length === 0 ? ok(a) : all(x, e)
 }
