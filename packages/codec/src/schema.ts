@@ -1,89 +1,165 @@
-import { Codec, RefineCodec, SchemaCodec, name } from './codec'
+import { Fail, Ok } from './result'
 
-export interface NumberSchema { readonly [name]: 'number' }
-export const number: NumberSchema = { [name]: 'number' }
+export const schema = Symbol.for('@braindump/codec/schema')
 
-export interface StringSchema { readonly [name]: 'string' }
-export const string: StringSchema = { [name]: 'string' }
+export interface Codec<in out A, in out B> {
+  readonly _a?: A
+  readonly _b?: B
+}
 
-export interface BooleanSchema { readonly [name]: 'boolean' }
-export const boolean: BooleanSchema = { [name]: 'boolean' }
+export interface AnyNumber extends Codec<unknown, number> { readonly [schema]: 'number' }
+export const number: AnyNumber = { [schema]: 'number' }
 
-export interface ArraySchema<Schema> {
-  readonly [name]: 'array',
+export interface AnyString extends Codec<unknown, string> { readonly [schema]: 'string' }
+export const string: AnyString = { [schema]: 'string' }
+
+export interface AnyBoolean extends Codec<unknown, boolean> { readonly [schema]: 'boolean' }
+export const boolean: AnyBoolean = { [schema]: 'boolean' }
+
+export interface AnyObject extends Codec<unknown, Record<PropertyKey, unknown>> { readonly [schema]: 'object' }
+export const object: AnyObject = ({ [schema]: 'object' })
+
+export interface AnyArray extends Codec<unknown, readonly unknown[]> { readonly [schema]: 'array' }
+export const array: AnyArray = ({ [schema]: 'array' })
+
+export interface Union<Schemas extends readonly unknown[]> extends Codec<Encoded<Schemas[number]>, Decoded<Schemas[number]>> {
+  readonly [schema]: 'union',
+  readonly schemas: Schemas
+}
+
+export const union = <const Schemas extends readonly [Schema, Schema, ...readonly Schema[]]>(...schemas: Schemas): Union<Schemas> => ({ [schema]: 'union', schemas })
+
+export interface ArrayOf<Schema> extends Codec<readonly Encoded<Schema>[], readonly Decoded<Schema>[]> {
+  readonly [schema]: 'arrayOf',
   readonly items: Schema
 }
 
-export const array = <const S extends Schema>(items: S): ArraySchema<S> => ({ [name]: 'array', items })
+export const arrayOf = <const S extends Schema>(items: S): ArrayOf<S> => ({ [schema]: 'arrayOf', items })
 
-export interface RecordSchema<K, V> {
-  readonly [name]: 'record',
+export interface RecordOf<K, V> extends Codec<Record<PropertyKey, unknown>, Record<Decoded<K> & PropertyKey, Decoded<V>>> {
+  readonly [schema]: 'record',
   readonly keys: K,
   readonly values: V
 }
 
-type PropertyKeySchema = string | StringSchema | Codec<any, string>
+export type PropertyKeySchema = string | AnyString | Codec<any, string>
 
-export const record = <K extends PropertyKeySchema, V>(keys: K, values: V): RecordSchema<K, V> => ({ [name]: 'record', keys, values })
+export const propertyKey = union(string, number)
 
-export interface UnionSchema<Schemas extends readonly unknown[]> {
-  readonly [name]: 'union',
-  readonly schemas: Schemas
+export const record = <K extends PropertyKeySchema, V>(keys: K, values: V): RecordOf<K, V> => ({ [schema]: 'record', keys, values })
+
+export interface Refine<A, B extends A> extends Codec<A, B> {
+  readonly [schema]: 'refine',
+  readonly refine: (a: A) => a is B
 }
 
-export const union = <const Schemas extends readonly [Schema, Schema, ...readonly Schema[]]>(...schemas: Schemas): UnionSchema<Schemas> => ({ [name]: 'union', schemas })
+export const refine = <A, B extends A>(refine: (a: A) => a is B): Refine<A, B> => ({ [schema]: 'refine', refine })
 
-export interface Optional<S, A> {
-  readonly [name]: 'optional',
-  readonly schema: S,
-  readonly defaultValue: A
+export interface Total<A, B> extends Codec<A, B> {
+  readonly [schema]: 'total',
+  readonly ab: (a: A) => B,
+  readonly ba: (b: B) => A
 }
 
-export const optional: {
-  <S extends Schema, const A>(schema: S, defaultValue: A): Optional<S, A>,
-  <S extends Schema>(schema: S): Optional<S, undefined>
-} = (schema: Schema, defaultValue?: unknown): Optional<Schema, any> => ({ [name]: 'optional', schema, defaultValue })
+export const map = <A, B>(ab: (a: A) => B, ba: (b: B) => A): Total<A, B> => ({ [schema]: 'total', ab, ba })
 
-export const fromSchema = <const S extends Schema>(schema: S): SchemaCodec<S, Encoded<S>, Decoded<S>> => ({ [name]: 'schema', schema })
+export interface Part<A, B> extends Codec<A, B> {
+  readonly [schema]: 'part',
+  readonly decode: (a: A) => Ok<B> | Fail,
+  readonly encode: (b: B) => Ok<A> | Fail
+}
 
-export type Schema =
-  | number | string | boolean | null | undefined
+export const codec = <A, B>(decode: (a: A) => Ok<B> | Fail, encode: (b: B) => Ok<A> | Fail): Part<A, B> => ({ [schema]: 'part', decode, encode })
+
+export interface Lift<A, B> extends Codec<A, B> {
+  readonly [schema]: 'lift',
+  readonly schema: Schema
+}
+
+export const lift = <S extends AdhocSchema>(s: S): Lift<Encoded<S>, Decoded<S>> =>
+  ({ [schema]: 'lift', schema: s })
+
+export interface Pipe<A, B> extends Codec<A, B> {
+  readonly [schema]: 'pipe',
+  readonly codecs: readonly Codec<any, any>[]
+}
+
+export const pipe: {
+  <A, B, C>(ab: Codec<A, B>, bz: Codec<B, C>): Pipe<A, C>,
+  <A, B, C, D>(ab: Codec<A, B>, bc: Codec<B, C>, cd: Codec<C, D>): Pipe<A, D>,
+  <A, B, C, D, E>(ab: Codec<A, B>, bc: Codec<B, C>, cd: Codec<C, D>, de: Codec<D, E>): Pipe<A, E>,
+  <A, B, C, D, E, F>(ab: Codec<A, B>, bc: Codec<B, C>, cd: Codec<C, D>, de: Codec<D, E>, ef: Codec<E, F>): Pipe<A, F>,
+} = (...codecs: readonly Codec<any, any>[]) => ({ [schema]: 'pipe', codecs }) as const
+
+export const optionalSymbol = Symbol.for('@braindump/codec/optional')
+
+export interface Optional<S> {
+  readonly [optionalSymbol]: 'optional',
+  readonly schema: S
+}
+
+export const optional = <S extends Schema>(schema: S): Optional<S> => ({ [optionalSymbol]: 'optional', schema })
+
+export const isOptional = (s: unknown): s is Optional<unknown> => !!s && (s as Record<PropertyKey, unknown>)[optionalSymbol] === 'optional'
+
+export const isNamed = <S extends Schema>(s: S): s is S & StructuredSchema =>
+  s && typeof(s as Record<PropertyKey, unknown>)[schema] === 'string'
+
+export type Schema = StructuredSchema | AdhocSchema
+
+type StructuredSchema =
+  // Primitive
+  | AnyNumber
+  | AnyString
+  | AnyBoolean
+  | AnyObject
+  | AnyArray
+  // Sum
+  | Union<readonly unknown[]>
+  // Variable size product
+  | RecordOf<unknown, unknown>
+  | ArrayOf<unknown>
+  // Transform
+  | Refine<any, any>
+  | Total<any, any>
+  | Part<any, any>
+  | Lift<any, any>
+  | Pipe<any, any>
+
+type AdhocSchema =
+  // Adhoc literal
+  | number
+  | string
+  | boolean
+  | null
+  | undefined
+  // Adhoc fixed size product
   | readonly Schema[]
-  | { readonly [s: string]: Schema }
-  | NamedSchema
-
-export type NamedSchema =
-  | NumberSchema | StringSchema | BooleanSchema
-  | Optional<unknown, any>
-  | ArraySchema<unknown>
-  | RecordSchema<string | StringSchema, unknown>
-  | UnionSchema<readonly unknown[]>
-  | Codec<any, any>
-
-export const isNamedSchema = (x: unknown): x is NamedSchema => !!x && typeof (x as NamedSchema)[name] === 'string'
+  | { readonly [s: string]: Schema | Optional<Schema> }
 
 export type Decoded<S> =
   S extends number | string | boolean | null | undefined ? S
-  : S extends NumberSchema ? number
-  : S extends StringSchema ? string
-  : S extends BooleanSchema ? boolean
-  : S extends Optional<infer S, infer A> ? Decoded<S> | A
-  : S extends ArraySchema<infer Schema> ? readonly Decoded<Schema>[]
-  : S extends RecordSchema<infer K extends PropertyKeySchema, infer V> ? Record<Decoded<K>, Decoded<V>>
-  : S extends UnionSchema<infer Schemas> ? Decoded<Schemas[number]>
-  : S extends RefineCodec<any, infer B> ? B // FIXME: Why does TS infer unknown without special casing this?
-  : S extends Codec<any, infer B> ? B
+  : S extends Codec<any, infer A> ? A
   : S extends readonly Schema[] ? { readonly [K in keyof S]: Decoded<S[K]> }
-  : S extends { readonly [s: string]: Schema } ? { readonly [K in keyof S]: Decoded<S[K]> }
+  : S extends { readonly [s: PropertyKey]: Schema } ? { readonly [K in keyof S]: Decoded<S[K]> }
+  : S extends { readonly [s: PropertyKey]: Schema | Optional<Schema> }
+    ? Compact<{ readonly [K in RequiredKeys<S>]: S[K] extends Optional<infer SS> ? Decoded<SS> : Decoded<S[K]> } &
+    { readonly [K in OptionalKeys<S>]?: S[K] extends Optional<infer SS> ? Decoded<SS> : Decoded<S[K]> }>
   : never
 
+export type OptionalKeys<S> = {
+  readonly [K in keyof S]: S[K] extends Optional<unknown> ? K : never
+}[keyof S]
+
+export type RequiredKeys<S> = Exclude<keyof S, OptionalKeys<S>>
+
+export type Compact<S> = {
+  readonly [K in keyof S]: S[K]
+}
+
 export type Encoded<S> =
-  S extends number | string | boolean | null | undefined | NumberSchema | StringSchema | BooleanSchema ? unknown
-  : S extends Optional<infer S, unknown> ? Encoded<S> | undefined
-  : S extends ArraySchema<unknown> ? readonly unknown[]
-  : S extends RecordSchema<string, infer V> ? Record<string, Encoded<V>>
-  : S extends UnionSchema<infer Schemas extends readonly Schema[]> ? Encoded<Schemas[number]>
+  S extends number | string | boolean | null | undefined ? unknown
   : S extends Codec<infer A, any> ? A
   : S extends readonly Schema[] ? { readonly [K in keyof S]: Encoded<S[K]> }
-  : S extends { readonly [s: string]: Schema } ? Record<string, Encoded<S[keyof S]>>
-  : unknown
+  : S extends { readonly [K in PropertyKey]: Schema | Optional<Schema> } ? Record<string, Encoded<S[keyof S]>>
+  : never

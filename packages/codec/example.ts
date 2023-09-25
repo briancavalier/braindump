@@ -1,6 +1,6 @@
 import { inspect } from 'node:util'
 
-import { isOk, string, encode, number, json, decode, refine, Decoded, optional } from './src'
+import { isOk, string, encode, number, decode, refine, optional, json, pipe, object, lift, arrayOf, Encoded, record, Decoded, boolean, codec, unexpected, ok } from './src'
 
 type ISODateTime = string & { readonly format: 'rfc3339' }
 export const isoDateTime = refine((s: string): s is ISODateTime =>
@@ -11,28 +11,45 @@ const person = {
   age: number
 } as const
 
+const stringToNumber = codec(
+  (x: string) => {
+    const n = Number.parseFloat(x)
+    return Number.isNaN(n) ? unexpected('numeric string', x) : ok(n)
+  },
+  (x: number) => ok(`${x}`)
+)
+
 const request = {
-  body: json(person),
-  queryStringParameters: {
-    date: isoDateTime,
-    max: optional(number, 1)
-  }
+  a: optional(number),
+  person: person,
+  date: isoDateTime,
+  max: pipe(string, stringToNumber),
+  ids: arrayOf(number),
+  tuple: [string, number, boolean],
 }
 
-type Request = Decoded<typeof request>
+type DecodedRequest = Decoded<typeof request>
 
-const req = {
-  body: JSON.stringify({ name: 'Dennis', age: 37 }),
-  queryStringParameters: {
-    date: new Date().toISOString(),
-    // max: 2
-  }
-}
+const req = JSON.stringify({
+  a: 1,
+  person: {
+    name: 'Dennis',
+    age: 37,
+    extra: 'kljsdf'
+  },
+  date: new Date().toISOString(),
+  max: '2',
+  ids: [1, 2, 3],
+  tuple: ['', 2, false],
+  extra: '123'
+})
 
-const r = decode(request)(req)
+const requestCodec = pipe(json, object, lift(request))
+
+const r = decode(requestCodec)(req)
 console.log(inspect(r, false, Infinity))
 
 if(isOk(r)) {
-  const r2 = encode(request)(r.value)
+  const r2 = encode(requestCodec)({ ...r.value, extra: '123' })
   console.log(inspect(r2, false, Infinity))
 }

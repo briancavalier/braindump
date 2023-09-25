@@ -19,3 +19,9 @@ Overall goals, and goals compared to https://github.com/briancavalier/decode
 1. Simpler types when inspecting/hovering over schemas and codecs
   - Simpler types for primitive schemas (not function types)
   - Do not retain complete _type-level_ error AST.  It hasn't been useful in practice and clutters IDE UIs and compiler output
+
+## Keep/change/improve
+
+1. [Adhoc schemas](https://github.com/briancavalier/braindump/tree/main/packages/schema#adhoc-schemas)
+2. Compositional API
+3. Detailed runtime errors

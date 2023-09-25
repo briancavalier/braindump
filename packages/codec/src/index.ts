@@ -1,5 +1,4 @@
 export * from './result'
-export * from './codec'
 export * from './decode'
 export * from './encode'
 export * from './json'

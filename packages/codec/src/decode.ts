@@ -1,10 +1,8 @@
-
-import { name } from './codec'
 import { Ok, Fail, ok, unexpected, isOk, at, all, missing, none } from './result'
-import { ArraySchema, UnionSchema, Schema, isNamedSchema, Decoded, Encoded, RecordSchema } from './schema'
+import { ArrayOf, Union, Schema, Decoded, Encoded, RecordOf, isOptional, isNamed, schema } from './schema'
 
-export const decode = <const S>(s: S) => (x: Encoded<S>): Ok<Decoded<S>> | Fail =>
-  _decode(s as Schema, x)
+export const decode = <const S>(s: S) => <const A extends Encoded<S>>(a: A): Ok<Decoded<S>> | Fail =>
+  _decode(s as Schema, a)
 
 const _decode = (s: Schema, x: unknown): Ok<any> | Fail => {
   if (s == null || typeof s === 'number' || typeof s === 'string' || typeof s === 'boolean')
@@ -13,62 +11,68 @@ const _decode = (s: Schema, x: unknown): Ok<any> | Fail => {
   if (Array.isArray(s))
     return Array.isArray(x) ? decodeTuple(s, x) : unexpected(s, x)
 
-  if (isNamedSchema(s)) {
-    switch (s[name]) {
-      case 'optional':
-        return x === undefined ? ok(s.defaultValue)
-          : _decode(s.schema as Schema, x)
+  if (isNamed(s)) {
+    const ss = s[schema]
+    switch (ss) {
       case 'number':
       case 'string':
       case 'boolean':
-        return s[name] === typeof x ? ok(x) : unexpected(s, x)
+        return ss === typeof x ? ok(x) : unexpected(s, x)
+      case 'object':
+        return x && typeof x === 'object' && !Array.isArray(x)
+          ? ok(x)
+          : unexpected(s, x)
       case 'array':
-        return Array.isArray(x) ? decodeArray(s as ArraySchema<Schema>, x) : unexpected(s, x)
+        return Array.isArray(x) ? ok(x) : unexpected(s, x)
+      case 'union':
+        return decodeUnion(s as any, x)
       case 'record':
         return x && typeof x === 'object' && !Array.isArray(x)
-          ? decodeRecord(s as RecordSchema<Schema, Schema>, x as Record<any, unknown>)
+          ? decodeRecord(s as any, x as Record<any, unknown>)
           : unexpected(s, x)
-      case 'union':
-        return decodeUnion(s as UnionSchema<readonly Schema[]>, x)
+      case 'arrayOf':
+        return Array.isArray(x) ? decodeArray(s as any, x) : unexpected(s, x)
       case 'refine':
         return s.refine(x) ? ok(x) : unexpected(s, x)
       case 'total':
         return ok(s.ab(x))
-      case 'partial':
+      case 'part':
         return s.decode(x)
+      case 'lift':
+        return _decode(s.schema, x)
       case 'pipe':
-        return s.codecs.reduce((r: Ok<unknown> | Fail, codec) =>
-          isOk(r) ? _decode(codec, r.value) : r, ok(x))
+        return s.codecs.reduce((r: Ok<unknown> | Fail, schema) =>
+          isOk(r) ? _decode(schema as Schema, r.value) : r, ok(x))
     }
   }
 
   if (s && typeof s === 'object')
     return x && typeof x === 'object'
-      ? decodeProperties(s as Record<string, Schema>, x as Record<string, unknown>)
+      ? decodeProperties(s as any, x as Record<string, unknown>)
       : unexpected(s, x)
 
   return unexpected(s, x)
 }
 
-const decodeArray = <S extends ArraySchema<Schema>>(s: S, x: readonly unknown[]) => {
+const decodeArray = (s: ArrayOf<Schema>, x: readonly unknown[]) => {
   const a = []
   const e = []
   for (let i = 0; i < x.length; i++) {
-    const r = _decode(s.items, x[i])
+    const r = _decode((s as any).items, x[i])
     if (!isOk(r)) e.push(at(i, r))
     else a[i] = r.value
   }
   return e.length === 0 ? ok(a) : all(x, e)
 }
 
-const decodeRecord = <S extends RecordSchema<Schema, Schema>>({ keys, values }: S, x: Record<any, unknown>) => {
-  const a = {} as Record<any, unknown>
+const decodeRecord = (s: RecordOf<Schema, Schema>, x: Record<any, unknown>) => {
+  const a = {} as Record<PropertyKey, unknown>
   const e = []
   for (const k of Object.keys(x)) {
-    const rk = _decode(keys, k)
+    const rk = _decode((s as any).keys, k)
     if(!isOk(rk)) e.push(at(k, rk))
     else {
-      const rv = _decode(values, x[k])
+      const rv = _decode((s as any).values, x[k])
       if(!isOk(rv)) e.push(at(k, rv))
       else a[rk.value] = rv.value
     }
@@ -76,32 +80,42 @@ const decodeRecord = <S extends RecordSchema<Schema, Schema>>({ keys, values }: 
   return e.length === 0 ? ok(a) : all(x, e)
 }
 
-const decodeTuple = <S extends readonly Schema[]>(s: S, x: readonly unknown[]) => {
+const decodeTuple = (s: readonly Schema[], x: readonly unknown[]) => {
   const a = []
   const e = []
-  for (let i = 0; i < x.length; i++) {
-    const r = _decode(s[i], x[i])
-    if (!isOk(r)) e.push(at(i, r))
-    else a[i] = r.value
+  for (let i = 0; i < s.length; i++) {
+    const si = s[i]
+    if (i in x) {
+      const r = _decode(si, x[i])
+      if (!isOk(r)) e.push(at(i, r))
+      else a[i] = r.value
+    } else {
+      e.push(missing(i, si))
+    }
   }
   return e.length === 0 ? ok(a) : all(x, e)
 }
 
-const decodeProperties = <S extends Record<string, Schema>>(s: S, x: Record<string, unknown>) => {
+const decodeProperties = (s: Record<string, Schema>, x: Record<string, unknown>) => {
   const a = {} as Record<string, unknown>
   const e = []
   for (const k of Object.keys(s)) {
-    const r = _decode(s[k], x[k])
-    if (!isOk(r)) e.push(k in x ? at(k, r) : at(k, missing(s[k])))
-    else a[k] = r.value
+    const sk = s[k]
+    if(k in x) {
+      const r = _decode(isOptional(sk) ? sk.schema as Schema : sk, x[k])
+      if (!isOk(r)) e.push(at(k, r))
+      else a[k] = r.value
+    } else {
+      if(!isOptional(s[k])) e.push(missing(k, sk))
+    }
   }
   return e.length === 0 ? ok(a) : all(x, e)
 }
 
-const decodeUnion = <S extends UnionSchema<readonly Schema[]>>(s: S, x: unknown) => {
+const decodeUnion = (s: Union<readonly Schema[]>, x: unknown) => {
   const e = []
-  for (let i = 0; i < s.schemas.length; i++) {
-    const r = _decode(s.schemas[i], x)
+  for (let i = 0; i < (s as any).schemas.length; i++) {
+    const r = _decode((s as any).schemas[i], x)
     if (isOk(r)) return r
     e.push(r)
   }
