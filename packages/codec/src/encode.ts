@@ -103,12 +103,12 @@ const encodeProperties = (s: Record<string, Schema>, x: Record<string, unknown>)
   return e.length === 0 ? ok(a) : all(x, e)
 }
 
-const encodeUnion = (s: Union<readonly Schema[]>, x: unknown) => {
+const encodeUnion = (s: Union<readonly unknown[]>, x: unknown) => {
   const e = []
-  for (let i = 0; i < (s as any).schemas.length; i++) {
-    const r = _encode((s as any).schemas[i], x)
+  for (let i = 0; i < s.schemas.length; i++) {
+    const r = _encode(s.schemas[i] as Schema, x)
     if (isOk(r)) return r
     e.push(r)
   }
-  return none(x, e)
+  return none(s, x, e)
 }

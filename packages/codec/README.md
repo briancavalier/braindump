@@ -14,7 +14,7 @@
     - Only strong heursitic seems to be: when needing partial application of a decoding function that throws, e.g. promise.then(assert(fromSchema(mySchema)))
       - decodeOrThrow improves ergonomics, imho:
         - promise.then(decodeOrThrow(mySchema))
-1. Error messages for unions
+1. Error messages for unionsp
   - Currently, errors are like:
       expected string, got 123
       | expected null, got 123
