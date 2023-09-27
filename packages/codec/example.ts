@@ -1,23 +1,11 @@
+import { randomUUID } from 'node:crypto'
 import { inspect } from 'node:util'
 
-import { isOk, string, encode, number, decode, refine, optional, json, pipe, object, lift, arrayOf, Decoded, boolean, codec, unexpected, ok, printFail, union, printSchema } from './src'
+import { isOk, string, encode, number, refine, optional, pipe, Decoded, codec, unexpected, ok, formatFail, union, decode } from './src'
 
 type ISODateTime = string & { readonly format: 'rfc3339' }
 export const isoDateTime = refine((s: string): s is ISODateTime =>
   !Number.isNaN(new Date(s).getTime()))
-
-const person = {
-  name: string,
-  age: number
-} as const
-
-const thing = union({
-  type: 'a',
-  a: number
-}, {
-  type: 'b',
-  b: string
-})
 
 const stringToNumber = codec(
   (x: string) => {
@@ -28,44 +16,60 @@ const stringToNumber = codec(
 )
 
 const request = {
-  a: optional(number),
-  b: union(string, number),
-  person: person,
-  thing: thing,
+  userId: string,
+  status: optional(union('active', 'inactive')),
+  max: pipe(string, stringToNumber),
+} as const
+
+const person = {
+  name: string,
+  age: number
+} as const
+
+const response = {
+  userId: string,
+  details: person,
   date: isoDateTime,
   max: pipe(string, stringToNumber),
-  ids: arrayOf(number),
-  tuple: [string, number, boolean],
+} as const
+
+type Request = Decoded<typeof request>
+
+type Response = Decoded<typeof response>
+
+const handleRequest = (r: Request): Response =>
+  ({
+    userId: r.userId,
+    details: {
+      name: 'Dennis',
+      age: 37,
+      extra: 'deep extra response property'
+    },
+    date: new Date().toISOString() as ISODateTime,
+    max: r.max,
+    extra: 'extra response property'
+  }) as Response // Simulating width-subtyping
+
+const req = {
+  userId: randomUUID(),
+  // status: 'active',
+  // status: '1',
+  max: '2',
+  extra: 'extra request property'
 }
 
-type DecodedRequest = Decoded<typeof request>
+// assert, assertOk?  decodeOrThrow too ergonomic?
+const decodedReqOrFail = decode(request)(req)
 
-const req = JSON.stringify({
-  a: 1,
-  b: true,
-  person: {
-    name: 'Dennis',
-    // age: 37,
-    extra: 'kljsdf'
-  },
-  thing: { type: 'c' },
-  date: new Date().toISOString(),
-  // max: '2',
-  ids: [1, 2, 3],
-  tuple: ['', 2, false],
-  extra: '123'
-})
+if(!isOk(decodedReqOrFail)) throw new Error(formatFail(decodedReqOrFail))
 
-console.log(printSchema(request))
+console.log('--- request ---------------------', '\nraw', inspect(req, false, Infinity), '\ndecoded', inspect(decodedReqOrFail.value, false, Infinity), '')
 
-const requestCodec = pipe(json, object, lift(request))
+const res = handleRequest(decodedReqOrFail.value)
 
-const r = decode(requestCodec)(req)
-console.log(inspect(r, false, Infinity))
+const encodedResOrFail = encode(response)(res)
 
-if(isOk(r)) {
-  const r2 = encode(requestCodec)({ ...r.value, extra: '123' })
-  console.log(inspect(r2, false, Infinity))
-} else {
-  console.log(printFail(r))
-}
+if (isOk(encodedResOrFail))
+  console.log('\n--- response ---------------------', '\nraw', inspect(res, false, Infinity), '\nencoded', inspect(encodedResOrFail.value, false, Infinity), '')
+else
+  console.error('--- error ---------------------', formatFail(encodedResOrFail))

@@ -4,7 +4,7 @@ import { ArrayOf, Union, Schema, Decoded, Encoded, RecordOf, isOptional, isNamed
 export const decode = <const S>(s: S) => <const A extends Encoded<S>>(a: A): Ok<Decoded<S>> | Fail =>
   _decode(s as Schema, a)
 
-const _decode = (s: Schema, x: unknown): Ok<any> | Fail => {
+export const _decode = (s: Schema, x: unknown): Ok<any> | Fail => {
   if (s == null || typeof s === 'number' || typeof s === 'string' || typeof s === 'boolean')
     return s === x ? ok(x) : unexpected(s, x)
 
@@ -34,9 +34,7 @@ const _decode = (s: Schema, x: unknown): Ok<any> | Fail => {
         return Array.isArray(x) ? decodeArray(s as any, x) : unexpected(s, x)
       case 'refine':
         return s.refine(x) ? ok(x) : unexpected(s, x)
-      case 'total':
-        return ok(s.ab(x))
-      case 'part':
+      case 'transform':
         return s.decode(x)
       case 'lift':
         return _decode(s.schema, x)

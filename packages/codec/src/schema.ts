@@ -55,21 +55,13 @@ export interface Refine<A, B extends A> extends Codec<A, B> {
 
 export const refine = <A, B extends A>(refine: (a: A) => a is B): Refine<A, B> => ({ [schema]: 'refine', refine })
 
-export interface Total<A, B> extends Codec<A, B> {
-  readonly [schema]: 'total',
-  readonly ab: (a: A) => B,
-  readonly ba: (b: B) => A
-}
-
-export const map = <A, B>(ab: (a: A) => B, ba: (b: B) => A): Total<A, B> => ({ [schema]: 'total', ab, ba })
-
-export interface Part<A, B> extends Codec<A, B> {
-  readonly [schema]: 'part',
+export interface Transform<A, B> extends Codec<A, B> {
+  readonly [schema]: 'transform',
   readonly decode: (a: A) => Ok<B> | Fail,
   readonly encode: (b: B) => Ok<A> | Fail
 }
 
-export const codec = <A, B>(decode: (a: A) => Ok<B> | Fail, encode: (b: B) => Ok<A> | Fail): Part<A, B> => ({ [schema]: 'part', decode, encode })
+export const codec = <A, B>(decode: (a: A) => Ok<B> | Fail, encode: (b: B) => Ok<A> | Fail): Transform<A, B> => ({ [schema]: 'transform', decode, encode })
 
 export interface Lift<A, B> extends Codec<A, B> {
   readonly [schema]: 'lift',
@@ -121,8 +113,7 @@ type StructuredSchema =
   | ArrayOf<unknown>
   // Transform
   | Refine<any, any>
-  | Total<any, any>
-  | Part<any, any>
+  | Transform<any, any>
   | Lift<any, any>
   | Pipe<any, any>
 
@@ -143,8 +134,8 @@ export type Decoded<S> =
   : S extends readonly Schema[] ? { readonly [K in keyof S]: Decoded<S[K]> }
   : S extends { readonly [s: PropertyKey]: Schema } ? { readonly [K in keyof S]: Decoded<S[K]> }
   : S extends { readonly [s: PropertyKey]: Schema | Optional<Schema> }
-    ? Compact<{ readonly [K in RequiredKeys<S>]: S[K] extends Optional<infer SS> ? Decoded<SS> : Decoded<S[K]> } &
-    { readonly [K in OptionalKeys<S>]?: S[K] extends Optional<infer SS> ? Decoded<SS> : Decoded<S[K]> }>
+    ? { readonly [K in RequiredKeys<S>]: S[K] extends Optional<infer SS> ? Decoded<SS> : Decoded<S[K]> } &
+    { readonly [K in OptionalKeys<S>]?: S[K] extends Optional<infer SS> ? Decoded<SS> : Decoded<S[K]> }
   : never
 
 export type OptionalKeys<S> = {
@@ -152,10 +143,6 @@ export type OptionalKeys<S> = {
 }[keyof S]
 
 export type RequiredKeys<S> = Exclude<keyof S, OptionalKeys<S>>
-
-export type Compact<S> = {
-  readonly [K in keyof S]: S[K]
-}
 
 export type Encoded<S> =
   S extends number | string | boolean | null | undefined ? unknown

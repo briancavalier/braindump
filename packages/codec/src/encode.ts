@@ -4,7 +4,7 @@ import { ArrayOf, Union, Schema, Decoded, Encoded, RecordOf, isOptional, schema,
 export const encode = <const S>(s: S) => <const A extends Decoded<S>>(a: A): Ok<Encoded<S>> | Fail =>
   _encode(s as Schema, a)
 
-const _encode = (s: Schema, x: unknown): Ok<any> | Fail => {
+export const _encode = (s: Schema, x: unknown): Ok<any> | Fail => {
   if (s == null || typeof s === 'number' || typeof s === 'string' || typeof s === 'boolean')
     return s === x ? ok(x) : unexpected(s, x)
 
@@ -31,9 +31,7 @@ const _encode = (s: Schema, x: unknown): Ok<any> | Fail => {
         return encodeUnion(s as any, x)
       case 'refine':
         return ok(x)
-      case 'total':
-        return ok(s.ba(x))
-      case 'part':
+      case 'transform':
         return s.encode(x)
       case 'lift':
         return _encode(s.schema, x)
