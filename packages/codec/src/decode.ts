@@ -1,4 +1,4 @@
-import { Ok, Fail, ok, unexpected, isOk, at, all, missing, none } from './result'
+import { Ok, Fail, ok, unexpected, isOk, at, all, missing, none, stopped } from './result'
 import { ArrayOf, Union, Schema, Decoded, Encoded, RecordOf, isOptional, isNamed, schema } from './schema'
 
 export const decode = <const S>(s: S) => <const A extends Encoded<S>>(a: A): Ok<Decoded<S>> | Fail =>
@@ -54,28 +54,26 @@ export const _decode = (s: Schema, x: unknown): Ok<any> | Fail => {
 
 const decodeArray = (s: ArrayOf<Schema>, x: readonly unknown[]) => {
   const a = []
-  const e = []
   for (let i = 0; i < x.length; i++) {
     const r = _decode((s as any).items, x[i])
-    if (!isOk(r)) e.push(at(i, r))
+    if (!isOk(r)) return stopped(x, at(i, r))
     else a[i] = r.value
   }
-  return e.length === 0 ? ok(a) : all(x, e)
+  return ok(a)
 }
 
 const decodeRecord = (s: RecordOf<Schema, Schema>, x: Record<any, unknown>) => {
   const a = {} as Record<PropertyKey, unknown>
-  const e = []
   for (const k of Object.keys(x)) {
     const rk = _decode((s as any).keys, k)
-    if(!isOk(rk)) e.push(at(k, rk))
+    if(!isOk(rk)) return stopped(x, at(k, rk))
     else {
       const rv = _decode((s as any).values, x[k])
-      if(!isOk(rv)) e.push(at(k, rv))
+      if(!isOk(rv)) return stopped(x, at(k, rv))
       else a[rk.value] = rv.value
     }
   }
-  return e.length === 0 ? ok(a) : all(x, e)
+  return ok(a)
 }
 
 const decodeTuple = (s: readonly Schema[], x: readonly unknown[]) => {

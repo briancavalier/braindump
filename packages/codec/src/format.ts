@@ -45,6 +45,11 @@ export const formatSchema = (s: Schema, indent = '', pad = '  '): string => {
   return JSON.stringify(s, null, pad)
 }
 
+const wrap = (input: unknown, s: string, indent: string) => {
+  const [start, end] = Array.isArray(input) ? ['[', ']'] : ['{', '}']
+  return `${start}\n${s}\n${indent}${end}`
+}
+
 export const formatFail = (r: Fail, indent = '', pad = '  '): string => {
   switch (r.type) {
     case 'unexpected':
@@ -53,6 +58,8 @@ export const formatFail = (r: Fail, indent = '', pad = '  '): string => {
       return `${indent}${r.key}: [MISSING] expected ${formatSchema(r.schema as any, indent, pad)}`
     case 'at':
       return `${indent}${r.key}: ${formatFail(r.error as Fail, indent, pad)}`
+    case 'stopped':
+      return wrap(r.input, `${formatFail(r.error as Fail, indent + pad, pad)}\n${indent + pad}... (stopped after first error) ...`, indent)
     case 'none': {
       const s = r.schema
       if (isNamed(s) && s[schema] === 'union')
@@ -61,10 +68,8 @@ export const formatFail = (r: Fail, indent = '', pad = '  '): string => {
           : formatUnion(r.errors, indent + pad, pad)
       return formatSimpleUnion(r.input, r.schema as Schema, indent + pad, pad)
     }
-    case 'all': {
-      const [start, end] = Array.isArray(r.input) ? ['[', ']'] : ['{', '}']
-      return `${start}${r.errors.map(e => `\n${formatFail(e as Fail, indent + pad, pad)}`)}\n${indent}${end}`
-    }
+    case 'all':
+      return wrap(r.input, `${r.errors.map(e => `\n${formatFail(e as Fail, indent + pad, pad)}`)}`, indent)
     case 'thrown':
       return r.error instanceof Error ? r.error.stack ?? r.error.message : `${r.error}`
   }
