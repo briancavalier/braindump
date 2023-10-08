@@ -1,23 +1,23 @@
 
-import { Ok, Fail, ok, thrown } from './result'
-import { codec } from './schema'
+import { attempt } from './attempt'
+import { decode } from './decode'
+import { encode } from './encode'
+import { isOk } from './result'
+import { Decoded, Schema, codec } from './schema'
 
 export type Json = null | number | string | boolean | readonly Json[] | { readonly [k: string]: Json }
 
-export const jsonParse = (s: string): Ok<Json> | Fail => {
-  try {
-    return ok(JSON.parse(s))
-  } catch(e) {
-    return thrown(s, e)
+export const json = <const S extends Schema>(s: S) => codec(
+  (x: string) => {
+    const r = jsonParse(x)
+    return isOk(r) ? decode(s as any)(r.value) : r
+  },
+  (x: Decoded<S>) => {
+    // @ts-expect-error infinite
+    const r = encode(s as any)(x)
+    return isOk(r) ? jsonStringify(r.value as any) : r
   }
-}
+)
 
-export const jsonStringify = (x: Json): Ok<string> | Fail => {
-  try {
-    return ok(JSON.stringify(x))
-  } catch(e) {
-    return thrown(x, e)
-  }
-}
-
-export const json = codec(jsonParse, jsonStringify)
+export const jsonParse = attempt((s: string) => JSON.parse(s) as Json)
+export const jsonStringify = attempt((x: Json) => JSON.stringify(x))

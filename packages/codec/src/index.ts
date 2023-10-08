@@ -1,3 +1,4 @@
+export { assertOk } from './assert'
 export { decode } from './decode'
 export { encode } from './encode'
 export * from './format'

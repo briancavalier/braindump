@@ -94,8 +94,8 @@ export const optional = <S extends Schema>(schema: S): Optional<S> => ({ [option
 
 export const isOptional = (s: unknown): s is Optional<unknown> => !!s && (s as Record<PropertyKey, unknown>)[optionalSymbol] === 'optional'
 
-export const isNamed = <S extends Schema>(s: S): s is S & StructuredSchema =>
-  s && typeof(s as Record<PropertyKey, unknown>)[schema] === 'string'
+export const isNamed = <S>(s: S): s is S & StructuredSchema =>
+  s && typeof (s as Record<PropertyKey, unknown>)[schema] === 'string'
 
 export type Schema = StructuredSchema | AdhocSchema
 
@@ -134,19 +134,19 @@ export type Decoded<S> =
   : S extends readonly Schema[] ? { readonly [K in keyof S]: Decoded<S[K]> }
   : S extends { readonly [s: PropertyKey]: Schema } ? { readonly [K in keyof S]: Decoded<S[K]> }
   : S extends { readonly [s: PropertyKey]: Schema | Optional<Schema> }
-    ? { readonly [K in RequiredKeys<S>]: S[K] extends Optional<infer SS> ? Decoded<SS> : Decoded<S[K]> } &
-    { readonly [K in OptionalKeys<S>]?: S[K] extends Optional<infer SS> ? Decoded<SS> : Decoded<S[K]> }
+    ? { readonly [K in RequiredKeys<S>]: Decoded<S[K]> } &
+    { readonly [K in OptionalKeys<S>]?: S[K] extends Optional<infer SS> ? Decoded<SS> : never }
   : never
-
-export type OptionalKeys<S> = {
-  readonly [K in keyof S]: S[K] extends Optional<unknown> ? K : never
-}[keyof S]
-
-export type RequiredKeys<S> = Exclude<keyof S, OptionalKeys<S>>
 
 export type Encoded<S> =
   S extends number | string | boolean | null | undefined ? unknown
   : S extends Codec<infer A, any> ? A
   : S extends readonly Schema[] ? { readonly [K in keyof S]: Encoded<S[K]> }
-  : S extends { readonly [K in PropertyKey]: Schema | Optional<Schema> } ? Record<string, Encoded<S[keyof S]>>
+  : S extends { readonly [k: PropertyKey]: Schema | Optional<Schema> } ? { readonly [k: PropertyKey]: Encoded<S[keyof S]> }
   : never
+
+type OptionalKeys<S> = {
+  readonly [K in keyof S]: S[K] extends Optional<unknown> ? K : never
+}[keyof S]
+
+type RequiredKeys<S> = Exclude<keyof S, OptionalKeys<S>>

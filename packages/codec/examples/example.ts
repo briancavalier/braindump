@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { inspect } from 'node:util'
 
-import { isOk, string, encode, number, refine, optional, pipe, Decoded, codec, unexpected, ok, formatFail, union, decode } from './src'
+import { isOk, string, encode, number, refine, optional, pipe, Decoded, codec, unexpected, ok, formatFail, union, decode, json, assertOk } from '../src'
 
 type ISODateTime = string & { readonly format: 'rfc3339' }
 export const isoDateTime = refine((s: string): s is ISODateTime =>
@@ -52,22 +52,23 @@ const handleRequest = (r: Request): Response =>
 
 const req = {
   userId: randomUUID(),
-  // status: 'active',
+  status: 'active',
   // status: '1',
   max: '2',
   extra: 'extra request property'
 }
 
 // assert, assertOk?  decodeOrThrow too ergonomic?
-const decodedReqOrFail = decode(request)(req)
+const decodedReqOrFail = decode(json(request))(JSON.stringify(req))
 
+assertOk(decodedReqOrFail)
 if(!isOk(decodedReqOrFail)) throw new Error(formatFail(decodedReqOrFail))
 
 console.log('--- request ---------------------', '\nraw', inspect(req, false, Infinity), '\ndecoded', inspect(decodedReqOrFail.value, false, Infinity), '')
 
 const res = handleRequest(decodedReqOrFail.value)
 
-const encodedResOrFail = encode(response)(res)
+const encodedResOrFail = encode(json(response))(res)
 
 if (isOk(encodedResOrFail))
   console.log('\n--- response ---------------------', '\nraw', inspect(res, false, Infinity), '\nencoded', inspect(encodedResOrFail.value, false, Infinity), '')
