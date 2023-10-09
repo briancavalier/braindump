@@ -34,7 +34,7 @@ export interface EnumOf<Values extends Record<string, unknown>> extends Codec<un
   readonly values: Values
 }
 
-export const enumOf = <const Values extends Record<string, unknown>>(values: Values): EnumOf<Values> => ({ [schema]: 'enum', values })
+export const enumOf = <const Values extends Record<string, string | number>>(values: Values): EnumOf<Values> => ({ [schema]: 'enum', values })
 
 export interface ArrayOf<Schema> extends Codec<readonly Encoded<Schema>[], readonly Decoded<Schema>[]> {
   readonly [schema]: 'arrayOf',
