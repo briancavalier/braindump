@@ -94,6 +94,17 @@ export const optional = <S extends Schema>(schema: S): Optional<S> => ({ [option
 
 export const isOptional = (s: unknown): s is Optional<unknown> => !!s && (s as Record<PropertyKey, unknown>)[optionalSymbol] === 'optional'
 
+export const restSymbol = Symbol.for('@braindump/codec/rest')
+
+export interface Rest<S> {
+  readonly [restSymbol]: 'rest',
+  readonly items: S
+}
+
+export const rest = <S extends Schema>(schema: S): Rest<S> => ({ [restSymbol]: 'rest', items: schema })
+
+export const isRest = (s: unknown): s is Rest<unknown> => !!s && (s as Record<PropertyKey, unknown>)[restSymbol] === 'rest'
+
 export const isNamed = <S>(s: S): s is S & StructuredSchema =>
   s && typeof (s as Record<PropertyKey, unknown>)[schema] === 'string'
 
@@ -126,12 +137,14 @@ type AdhocSchema =
   | undefined
   // Adhoc fixed size product
   | readonly Schema[]
+  | readonly [...readonly unknown[], Rest<unknown>]
   | { readonly [s: string]: Schema | Optional<Schema> }
 
 export type Decoded<S> =
   S extends number | string | boolean | null | undefined ? S
   : S extends Codec<any, infer A> ? A
   : S extends readonly Schema[] ? { readonly [K in keyof S]: Decoded<S[K]> }
+  : S extends readonly [...infer A extends unknown[], Rest<infer B>] ? readonly [...{ readonly [K in keyof A]: Decoded<A[K]> }, ...readonly Decoded<B>[]]
   : S extends { readonly [s: PropertyKey]: Schema } ? { readonly [K in keyof S]: Decoded<S[K]> }
   : S extends { readonly [s: PropertyKey]: Schema | Optional<Schema> }
     ? { readonly [K in RequiredKeys<S>]: Decoded<S[K]> } &
@@ -141,7 +154,8 @@ export type Decoded<S> =
 export type Encoded<S> =
   S extends number | string | boolean | null | undefined ? unknown
   : S extends Codec<infer A, any> ? A
-  : S extends readonly Schema[] ? { readonly [K in keyof S]: Encoded<S[K]> }
+  : S extends readonly Schema[] ? readonly unknown[]
+  : S extends readonly [...readonly Schema[], Rest<Schema>] ? readonly unknown[]
   : S extends { readonly [k: PropertyKey]: Schema | Optional<Schema> } ? { readonly [k: PropertyKey]: Encoded<S[keyof S]> }
   : never
 

@@ -10,7 +10,7 @@ export type Json = null | number | string | boolean | readonly Json[] | { readon
 export const json = <const S extends Schema>(s: S) => codec(
   (x: string) => {
     const r = jsonParse(x)
-    return isOk(r) ? decode(s as any)(r.value) : r
+    return isOk(r) ? decode(s)(r.value as any) : r
   },
   (x: Decoded<S>) => {
     // @ts-expect-error infinite

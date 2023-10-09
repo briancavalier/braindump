@@ -1,5 +1,5 @@
 import { Ok, Fail, ok, unexpected, isOk, at, all, missing, none, stopped } from './result'
-import { ArrayOf, Union, Schema, Decoded, Encoded, RecordOf, isOptional, schema, isNamed } from './schema'
+import { ArrayOf, Union, Schema, Decoded, Encoded, RecordOf, isOptional, schema, isNamed, isRest } from './schema'
 
 export const encode = <const S>(s: S) => <const A extends Decoded<S>>(a: A): Ok<Encoded<S>> | Fail =>
   _encode(s as Schema, a)
@@ -50,13 +50,38 @@ export const _encode = (s: Schema, x: unknown): Ok<any> | Fail => {
 }
 
 const encodeArray = (s: ArrayOf<Schema>, x: readonly unknown[]) => {
+  const r = encodeArrayItems((s as any).items, x)
+  return isOk(r) ? r : stopped(x, r)
+}
+
+const encodeArrayItems = (items: Schema, x: readonly unknown[], i = 0) => {
   const a = []
-  for (let i = 0; i < x.length; i++) {
-    const r = _encode((s as any).items, x[i])
-    if (!isOk(r)) return stopped(x, at(i, r))
-    else a[i] = r.value
+  for (let k = 0; i < x.length; i++, k++) {
+    const r = _encode(items, x[i])
+    if (!isOk(r)) return at(i, r)
+    else a[k] = r.value
   }
   return ok(a)
+}
+
+const encodeTuple = (s: readonly Schema[], x: readonly unknown[]) => {
+  const a = []
+  const e = []
+  for (let i = 0; i < s.length; i++) {
+    const si = s[i]
+    if (isRest(si)) {
+      const r = encodeArrayItems((si as any).items, x, i)
+      if (!isOk(r)) e.push(r)
+      else a.push(...r.value)
+    } else if (i in x) {
+      const r = _encode(si, x[i])
+      if (!isOk(r)) e.push(at(i, r))
+      else a[i] = r.value
+    } else {
+      e.push(missing(i, si))
+    }
+  }
+  return e.length === 0 ? ok(a) : all(x, e)
 }
 
 const encodeRecord = (s: RecordOf<Schema, Schema>, x: Record<any, unknown>) => {
@@ -71,18 +96,6 @@ const encodeRecord = (s: RecordOf<Schema, Schema>, x: Record<any, unknown>) => {
     }
   }
   return ok(a)
-}
-
-
-const encodeTuple = (s: readonly Schema[], x: readonly unknown[]) => {
-  const a = []
-  const e = []
-  for (let i = 0; i < s.length; i++) {
-    const r = _encode(s[i], x[i])
-    if (!isOk(r)) e.push(at(i, r))
-    else a[i] = r.value
-  }
-  return e.length === 0 ? ok(a) : all(x, e)
 }
 
 const encodeProperties = (s: Record<string, Schema>, x: Record<string, unknown>) => {

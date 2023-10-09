@@ -1,5 +1,5 @@
 import { Ok, Fail, ok, unexpected, isOk, at, all, missing, none, stopped } from './result'
-import { ArrayOf, Union, Schema, Decoded, Encoded, RecordOf, isOptional, isNamed, schema } from './schema'
+import { ArrayOf, Union, Schema, Decoded, Encoded, RecordOf, isOptional, isNamed, schema, isRest } from './schema'
 
 export const decode = <const S>(s: S) => <const A extends Encoded<S>>(a: A): Ok<Decoded<S>> | Fail =>
   _decode(s as Schema, a)
@@ -53,13 +53,38 @@ export const _decode = (s: Schema, x: unknown): Ok<any> | Fail => {
 }
 
 const decodeArray = (s: ArrayOf<Schema>, x: readonly unknown[]) => {
+  const r = decodeArrayItems((s as any).items, x)
+  return isOk(r) ? r : stopped(x, r)
+}
+
+const decodeArrayItems = (items: Schema, x: readonly unknown[], i = 0) => {
   const a = []
-  for (let i = 0; i < x.length; i++) {
-    const r = _decode((s as any).items, x[i])
-    if (!isOk(r)) return stopped(x, at(i, r))
-    else a[i] = r.value
+  for (let k = 0; i < x.length; i++, k++) {
+    const r = _decode(items, x[i])
+    if (!isOk(r)) return at(i, r)
+    else a[k] = r.value
   }
   return ok(a)
+}
+
+const decodeTuple = (s: readonly Schema[], x: readonly unknown[]) => {
+  const a = []
+  const e = []
+  for (let i = 0; i < s.length; i++) {
+    const si = s[i]
+    if (isRest(si)) {
+      const r = decodeArrayItems((si as any).items, x, i)
+      if (!isOk(r)) e.push(r)
+      else a.push(...r.value)
+    } else if (i in x) {
+      const r = _decode(si, x[i])
+      if (!isOk(r)) e.push(at(i, r))
+      else a[i] = r.value
+    } else {
+      e.push(missing(i, si))
+    }
+  }
+  return e.length === 0 ? ok(a) : all(x, e)
 }
 
 const decodeRecord = (s: RecordOf<Schema, Schema>, x: Record<any, unknown>) => {
@@ -74,22 +99,6 @@ const decodeRecord = (s: RecordOf<Schema, Schema>, x: Record<any, unknown>) => {
     }
   }
   return ok(a)
-}
-
-const decodeTuple = (s: readonly Schema[], x: readonly unknown[]) => {
-  const a = []
-  const e = []
-  for (let i = 0; i < s.length; i++) {
-    const si = s[i]
-    if (i in x) {
-      const r = _decode(si, x[i])
-      if (!isOk(r)) e.push(at(i, r))
-      else a[i] = r.value
-    } else {
-      e.push(missing(i, si))
-    }
-  }
-  return e.length === 0 ? ok(a) : all(x, e)
 }
 
 const decodeProperties = (s: Record<string, Schema>, x: Record<string, unknown>) => {

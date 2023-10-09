@@ -69,7 +69,7 @@ export const formatFail = (r: Fail, indent = '', pad = '  '): string => {
       return formatSimpleUnion(r.input, r.schema as Schema, indent + pad, pad)
     }
     case 'all':
-      return wrap(r.input, `${r.errors.map(e => `\n${formatFail(e as Fail, indent + pad, pad)}`)}`, indent)
+      return wrap(r.input, `${r.errors.map(e => `${formatFail(e as Fail, indent + pad, pad)}`).join(`\n`)}`, indent)
     case 'thrown':
       return r.error instanceof Error ? r.error.stack ?? r.error.message : `${r.error}`
   }
@@ -83,11 +83,10 @@ export const formatValue = (x: unknown): string =>
           : JSON.stringify(x)
 
 const formatSimpleUnion = (input: unknown, s: Schema, indent: string, pad: string) =>
-  `got ${formatSchema(input as any)}, expected ${formatSchema(s, indent + pad, pad)}`
+  `got ${formatSchema(input as any)}, expected ${formatSchema(s, indent, pad)}`
 
 const formatUnion = (errors: readonly unknown[], indent: string, pad: string) =>
   `No union schemas matched:${errors.map((e, i) => `\n---schema ${i}${indent}----------\n${indent}${formatFail(e as Fail, indent, pad)}`).join('')}`
-    // `got ${formatSchema(input as any)}, but no schemas matched:${errors.map((e, i) => `\n${indent}----------\n${indent}schema ${i}:\n${indent + pad}${formatSchema(schemas[i] as any, indent + pad, pad)}\n${indent}failed:\n${indent + pad}${formatFail(e as Fail, indent + pad, pad)}`).join('')}`
 
 const isSimpleUnion = (s: Union<readonly unknown[]>) =>
   s.schemas.every(s => (isNamed(s) || isAdhocPrimitive(s)))
