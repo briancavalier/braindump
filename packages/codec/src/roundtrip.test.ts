@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
-import { AnyBoolean, AnyNumber, AnyString, assertOk, boolean, decode, encode, number, schema, string } from '.'
+import { AnyBoolean, AnyNumber, AnyString, assertOk, boolean, decode, encode, enumOf, number, schema, string } from '.'
 
 test('roundtripping', async t => {
   await t.test('number', () => {
@@ -16,6 +16,12 @@ test('roundtripping', async t => {
   await t.test('boolean', () => {
     roundtripWith(boolean, true)
     roundtripWith(boolean, false)
+  })
+
+  await t.test('enum', () => {
+    enum T { a = Math.random(), b = Math.random() }
+    roundtripWith(enumOf(T), T.a)
+    roundtripWith(enumOf(T), T.b)
   })
 })
 

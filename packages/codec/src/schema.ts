@@ -29,6 +29,13 @@ export interface Union<Schemas extends readonly unknown[]> extends Codec<Encoded
 
 export const union = <const Schemas extends readonly [Schema, Schema, ...readonly Schema[]]>(...schemas: Schemas): Union<Schemas> => ({ [schema]: 'union', schemas })
 
+export interface EnumOf<Values extends Record<string, unknown>> extends Codec<unknown, Values[keyof Values]> {
+  readonly [schema]: 'enum',
+  readonly values: Values
+}
+
+export const enumOf = <const Values extends Record<string, unknown>>(values: Values): EnumOf<Values> => ({ [schema]: 'enum', values })
+
 export interface ArrayOf<Schema> extends Codec<readonly Encoded<Schema>[], readonly Decoded<Schema>[]> {
   readonly [schema]: 'arrayOf',
   readonly items: Schema
@@ -117,6 +124,8 @@ type StructuredSchema =
   | AnyBoolean
   | AnyObject
   | AnyArray
+  // encum
+  | EnumOf<Record<string, unknown>>
   // Sum
   | Union<readonly unknown[]>
   // Variable size product

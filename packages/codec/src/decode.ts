@@ -1,5 +1,5 @@
 import { Ok, Fail, ok, unexpected, isOk, at, all, missing, none, stopped } from './result'
-import { ArrayOf, Union, Schema, Decoded, Encoded, RecordOf, isOptional, isNamed, schema, isRest } from './schema'
+import { ArrayOf, Union, Schema, Decoded, Encoded, RecordOf, isOptional, isNamed, schema, isRest, EnumOf } from './schema'
 
 export const decode = <const S>(s: S) => <const A extends Encoded<S>>(a: A): Ok<Decoded<S>> | Fail =>
   _decode(s as Schema, a)
@@ -24,6 +24,8 @@ export const _decode = (s: Schema, x: unknown): Ok<any> | Fail => {
           : unexpected(s, x)
       case 'array':
         return Array.isArray(x) ? ok(x) : unexpected(s, x)
+      case 'enum':
+        return decodeEnum(s, x)
       case 'union':
         return decodeUnion(s as any, x)
       case 'record':
@@ -51,6 +53,9 @@ export const _decode = (s: Schema, x: unknown): Ok<any> | Fail => {
 
   return unexpected(s, x)
 }
+
+const decodeEnum = <Values extends Record<string, unknown>>(s: EnumOf<Values>, x: unknown) =>
+  Object.values(s.values).indexOf(x) >= 0 ? ok(x as Values[keyof Values]) : unexpected(s, x)
 
 const decodeArray = (s: ArrayOf<Schema>, x: readonly unknown[]) => {
   const r = decodeArrayItems((s as any).items, x)

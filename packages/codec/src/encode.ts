@@ -20,6 +20,7 @@ export const _encode = (s: Schema, x: unknown): Ok<any> | Fail => {
         return ss === typeof x ? ok(x) : unexpected(s, x)
       case 'object':
       case 'array':
+      case 'enum':
         return ok(x)
       case 'arrayOf':
         return Array.isArray(x) ? encodeArray(s as any, x) : unexpected(s, x)
