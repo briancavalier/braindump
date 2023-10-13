@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { inspect } from 'node:util'
 
-import { isOk, string, encode, number, refine, optional, pipe, Decoded, codec, unexpected, ok, formatFail, union, decode, json, assertOk } from '../src'
+import { isOk, string, encode, number, refine, optional, pipe, Decoded, codec, unexpected, ok, formatFail, union, decode, json, assertOk, enumOf } from '../src'
 
 type ISODateTime = string & { readonly format: 'rfc3339' }
 export const isoDateTime = refine((s: string): s is ISODateTime =>
@@ -18,6 +18,7 @@ const stringToNumber = codec(
 const request = {
   userId: string,
   status: optional(union('active', 'inactive')),
+  type: enumOf({ a: 0, b: 1 }),
   max: pipe(string, stringToNumber),
 } as const
 
@@ -53,6 +54,7 @@ const handleRequest = (r: Request): Response =>
 const req = {
   userId: randomUUID(),
   status: 'active',
+  type: 1,
   // status: '1',
   max: '2',
   extra: 'extra request property'

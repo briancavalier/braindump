@@ -14,30 +14,32 @@ export const formatSchema = (s: Schema, indent = '', pad = '  '): string => {
       case 'object':
       case 'array':
         return ss
+      case 'enum':
+        return Object.values(s.values).map(v => `${v}`).join(' | ')
       case 'union':
-        return s.schemas.map(s => formatSchema(s as Schema, indent)).join(' | ')
+        return s.schemas.map(s => formatSchema(s as Schema, indent, pad)).join(' | ')
       case 'record':
-        return `Record<${formatSchema(s.keys as Schema, indent), formatSchema(s.values as Schema, indent)}>`
+        return `Record<${formatSchema(s.keys as Schema, indent, pad), formatSchema(s.values as Schema, indent, pad)}>`
       case 'arrayOf':
-        return `readonly ${formatSchema(s.items as Schema)}[]`
+        return `readonly ${formatSchema(s.items as Schema, indent, pad)}[]`
       case 'refine':
       case 'transform':
         return ss
       case 'lift':
-        return formatSchema(s.schema, indent)
+        return formatSchema(s.schema, indent, pad)
       case 'pipe':
-        return formatSchema(s.codecs[0] as Schema, indent)
+        return formatSchema(s.codecs[0] as Schema, indent, pad)
     }
   }
 
   if (Array.isArray(s)) {
-    return `[${s.map(s => formatSchema(s, indent)).join(', ')}]`
+    return `[${s.map(s => formatSchema(s, indent, pad)).join(', ')}]`
   } else if (s && typeof s === 'object') {
     return `{${Object.keys(s).reduce(
       (r, k) => {
         const sk = (s as any)[k]
         const opt = isOptional(sk)
-        return r + `\n${indent + pad}${k}${opt ? '?' : ''}: ${formatSchema(opt ? sk.schema : sk, indent + pad)}`
+        return r + `\n${indent + pad}${k}${opt ? '?' : ''}: ${formatSchema(opt ? sk.schema : sk, indent + pad, pad)}`
       }, '')
       }\n${indent}}`
   }
