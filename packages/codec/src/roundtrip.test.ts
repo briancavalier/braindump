@@ -5,7 +5,7 @@ import { simpleFaker as F } from '@faker-js/faker'
 
 import { example } from './faker'
 
-import { Decoded, Schema, array, arrayOf, assertOk, boolean, decode, encode, enumOf, number, object, optional, record, string, union } from '.'
+import { Decoded, Schema, array, arrayOf, assertOk, bigint, boolean, decode, encode, enumOf, number, object, optional, record, string, union } from '.'
 
 test('roundtripping', async t => {
   await t.test('literal', () => {
@@ -19,6 +19,13 @@ test('roundtripping', async t => {
     roundtripWith(number, 1)
     roundtripWith(number, -1)
     roundtrip(number)
+  })
+
+  await t.test('bigint', () => {
+    roundtripWith(bigint, 0n)
+    roundtripWith(bigint, 1n)
+    roundtripWith(bigint, -1n)
+    roundtrip(bigint)
   })
 
   await t.test('string', () =>
@@ -68,12 +75,14 @@ test('roundtripping', async t => {
 const roundtrip = <const S extends Schema>(s: S) => roundtripWith(s, example(s))
 
 const roundtripWith = <const S extends Schema>(s: S, d: Decoded<S>) => {
+  const enc = encode(s)
+  const dec = decode(s)
   // @ts-expect-error infinite
-  const e1 = assertOk(encode(s)(d))
-  const d1 = assertOk(decode(s)(e1))
-  const e2 = assertOk(encode(s)(d1))
-  const d2 = assertOk(decode(s)(e2))
+  const e1 = assertOk(enc(d))
+  const d1 = assertOk(dec(e1))
+  const e2 = assertOk(enc(d1))
+  const d2 = assertOk(dec(e2))
 
-  assert.deepEqual(d1, d2)
   assert.deepEqual(e1, e2)
+  assert.deepEqual(d1, d2)
 }

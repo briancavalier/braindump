@@ -15,6 +15,7 @@ export const example = <const S extends Schema>(s: S): Decoded<S> => {
     const ss = s[schema]
     switch (ss) {
       case 'number': return F.number.float({ min: -1000, max: 1000 }) as any
+      case 'bigint': return F.number.bigInt() as any
       case 'string': return F.string.alphanumeric({ length: { min: 0, max: 20 } }) as any
       case 'boolean': return F.datatype.boolean() as any
       case 'object': return {} as any

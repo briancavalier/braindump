@@ -1,4 +1,6 @@
-import { union, string, number, decode, assertOk } from '../src'
+import { union, string, number } from '../src'
+
+import { runExample } from './run-example'
 
 const animal = union(
   { type: 'dog', foo: string, age: number },
@@ -11,6 +13,4 @@ const a = {
   age: 5
 }
 
-const r = decode(animal)(a)
-
-console.log(assertOk(r))
+runExample(animal, a)

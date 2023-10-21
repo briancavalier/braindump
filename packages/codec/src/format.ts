@@ -2,7 +2,7 @@ import { Fail } from './result'
 import { Schema, Union, isNamed, isOptional, schema } from './schema'
 
 export const formatSchema = (s: Schema, indent = '', pad = '  '): string => {
-  if (s == null || typeof s === 'number' || typeof s === 'string' || typeof s === 'boolean')
+  if (s == null || typeof s === 'number' || typeof s === 'string' || typeof s === 'boolean' || typeof s === 'bigint')
     return formatValue(s)
 
   if (isNamed(s)) {
@@ -13,6 +13,7 @@ export const formatSchema = (s: Schema, indent = '', pad = '  '): string => {
       case 'boolean':
       case 'object':
       case 'array':
+      case 'bigint':
         return ss
       case 'enum':
         return Object.values(s.values).map(v => `${v}`).join(' | ')
@@ -73,16 +74,25 @@ export const formatFail = (r: Fail, indent = '', pad = '  '): string => {
     case 'all':
       return wrap(r.input, `${r.errors.map(e => `${formatFail(e as Fail, indent + pad, pad)}`).join(`\n`)}`, indent)
     case 'thrown':
-      return r.error instanceof Error ? r.error.stack ?? r.error.message : `${r.error}`
+      return r.error instanceof Error
+        ? r.error.stack
+          ? formatStack(r.error.stack, indent)
+          : r.error.message
+        : `${r.error}`
   }
 }
 
 export const formatValue = (x: unknown): string =>
   x === null ? 'null'
     : x === undefined ? 'undefined'
-      : typeof x === 'string' ? `"${x}"`
-        : Array.isArray(x) ? `[${x.length > 3 ? `${x.slice(0, 3)}...` : x}]`
-          : JSON.stringify(x)
+      : typeof x === 'bigint' ? `${x}n`
+        : typeof x === 'number' || typeof x === 'boolean' ? `${x}`
+          : typeof x === 'string' ? `"${x}"`
+            : Array.isArray(x) ? `[${x.length > 3 ? `${x.slice(0, 3)}...` : x}]`
+              : JSON.stringify(x)
+
+export const formatStack = (s: string, indent: string) =>
+  s.split('\n').map(s => `${indent}${s}`).join('\n')
 
 const formatSimpleUnion = (input: unknown, s: Schema, indent: string, pad: string) =>
   `got ${formatSchema(input as any)}, expected ${formatSchema(s, indent, pad)}`

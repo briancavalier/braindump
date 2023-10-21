@@ -5,7 +5,7 @@ export const encode = <const S>(s: S) => <const A extends Decoded<S>>(a: A): Ok<
   _encode(s as Schema, a)
 
 export const _encode = (s: Schema, x: unknown): Ok<any> | Fail => {
-  if (s == null || typeof s === 'number' || typeof s === 'string' || typeof s === 'boolean')
+  if (s == null || typeof s === 'number' || typeof s === 'string' || typeof s === 'boolean' || typeof s === 'bigint')
     return s === x ? ok(x) : unexpected(s, x)
 
   if (Array.isArray(s))
@@ -18,6 +18,7 @@ export const _encode = (s: Schema, x: unknown): Ok<any> | Fail => {
       case 'string':
       case 'boolean':
         return ss === typeof x ? ok(x) : unexpected(s, x)
+      case 'bigint':
       case 'object':
       case 'array':
       case 'enum':

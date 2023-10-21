@@ -10,6 +10,9 @@ export interface Codec<in out A, in out B> {
 export interface AnyNumber extends Codec<unknown, number> { readonly [schema]: 'number' }
 export const number: AnyNumber = { [schema]: 'number' }
 
+export interface AnyBigInt extends Codec<unknown, bigint> { readonly [schema]: 'bigint' }
+export const bigint: AnyBigInt = { [schema]: 'bigint' }
+
 export interface AnyString extends Codec<unknown, string> { readonly [schema]: 'string' }
 export const string: AnyString = { [schema]: 'string' }
 
@@ -68,7 +71,7 @@ export interface Transform<A, B> extends Codec<A, B> {
   readonly encode: (b: B) => Ok<A> | Fail
 }
 
-export const codec = <A, B>(decode: (a: A) => Ok<B> | Fail, encode: (b: B) => Ok<A> | Fail): Transform<A, B> => ({ [schema]: 'transform', decode, encode })
+export const codec = <A, B, R1 extends Ok<B> | Fail, R2 extends Ok<A> | Fail>(decode: (a: A) => R1, encode: (b: B) => R2): Transform<A, B> => ({ [schema]: 'transform', decode, encode })
 
 export interface Lift<A, B> extends Codec<A, B> {
   readonly [schema]: 'lift',
@@ -120,6 +123,7 @@ export type Schema = StructuredSchema | AdhocSchema
 type StructuredSchema =
   // Primitive
   | AnyNumber
+  | AnyBigInt
   | AnyString
   | AnyBoolean
   | AnyObject
@@ -140,6 +144,7 @@ type StructuredSchema =
 type AdhocSchema =
   // Adhoc literal
   | number
+  | bigint
   | string
   | boolean
   | null
@@ -150,7 +155,7 @@ type AdhocSchema =
   | { readonly [s: string]: Schema | Optional<Schema> }
 
 export type Decoded<S> =
-  S extends number | string | boolean | null | undefined ? S
+  S extends number | bigint | string | boolean | null | undefined ? S
   : S extends Codec<any, infer A> ? A
   : S extends readonly Schema[] ? { readonly [K in keyof S]: Decoded<S[K]> }
   : S extends readonly [...infer A extends unknown[], Rest<infer B>] ? readonly [...{ readonly [K in keyof A]: Decoded<A[K]> }, ...readonly Decoded<B>[]]
@@ -161,7 +166,7 @@ export type Decoded<S> =
   : never
 
 export type Encoded<S> =
-  S extends number | string | boolean | null | undefined ? unknown
+  S extends number | bigint | string | boolean | null | undefined ? unknown
   : S extends Codec<infer A, any> ? A
   : S extends readonly Schema[] ? readonly unknown[]
   : S extends readonly [...readonly Schema[], Rest<Schema>] ? readonly unknown[]

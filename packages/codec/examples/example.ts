@@ -60,7 +60,6 @@ const req = {
   extra: 'extra request property'
 }
 
-// assert, assertOk?  decodeOrThrow too ergonomic?
 const decodedReqOrFail = decode(json(request))(JSON.stringify(req))
 
 assertOk(decodedReqOrFail)
