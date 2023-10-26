@@ -73,12 +73,14 @@ export const formatFail = (r: Fail, indent = '', pad = '  '): string => {
     }
     case 'all':
       return wrap(r.input, `${r.errors.map(e => `${formatFail(e as Fail, indent + pad, pad)}`).join(`\n`)}`, indent)
+    case 'failed':
+      return `${r.message}: expected ${formatSchema(r.schema as any, indent, pad)}`
     case 'thrown':
-      return r.error instanceof Error
+      return `got ${formatValue(r.input)}, which threw: ${r.error instanceof Error
         ? r.error.stack
           ? formatStack(r.error.stack, indent)
           : r.error.message
-        : `${r.error}`
+        : `${r.error}`}`
   }
 }
 

@@ -71,7 +71,7 @@ export interface Transform<A, B> extends Codec<A, B> {
   readonly encode: (b: B) => Ok<A> | Fail
 }
 
-export const codec = <A, B, R1 extends Ok<B> | Fail, R2 extends Ok<A> | Fail>(decode: (a: A) => R1, encode: (b: B) => R2): Transform<A, B> => ({ [schema]: 'transform', decode, encode })
+export const codec = <A, B>(decode: (a: A) => Ok<B> | Fail, encode: (b: B) => Ok<A> | Fail): Transform<A, B> => ({ [schema]: 'transform', decode, encode })
 
 export interface Lift<A, B> extends Codec<A, B> {
   readonly [schema]: 'lift',

@@ -3,7 +3,7 @@ import { test } from 'node:test'
 
 import { simpleFaker as F } from '@faker-js/faker'
 
-import { example } from './faker'
+import { arbitraryDecoded } from './arbitrary-faker'
 
 import { Decoded, Schema, array, arrayOf, assertOk, bigint, boolean, decode, encode, enumOf, number, object, optional, record, string, union } from '.'
 
@@ -72,7 +72,8 @@ test('roundtripping', async t => {
     }))
 })
 
-const roundtrip = <const S extends Schema>(s: S) => roundtripWith(s, example(s))
+const roundtrip = <const S extends Schema>(s: S) =>
+  roundtripWith(s, assertOk(arbitraryDecoded(s)))
 
 const roundtripWith = <const S extends Schema>(s: S, d: Decoded<S>) => {
   const enc = encode(s)
