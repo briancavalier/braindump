@@ -1,5 +1,7 @@
-import { codec, number, ok, pipe, string, unexpected } from '../src'
+import { assertOk, codec, number, ok, pipe, string, unexpected } from '../src'
 import { arbitraryDecoded, arbitraryEncoded } from '../src/arbitrary-faker'
+
+import { runExample } from './run-example'
 
 const numberToString =
   pipe(number,
@@ -19,7 +21,9 @@ const s = {
   }
 } as const
 
+console.log('arbitrary decoded', arbitraryDecoded(s))
 
-console.log(arbitraryDecoded(s))
+const x = arbitraryEncoded(s)
+console.log('arbitrary encoded', x)
 
-console.log(arbitraryEncoded(s))
+runExample(s, assertOk(x))
