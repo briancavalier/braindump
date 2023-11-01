@@ -29,12 +29,6 @@
     "typescript": "^5.2.2"
   },
   "workspaces": [
-    "packages/set",
-    "packages/map",
-    "packages/urn",
-    "packages/schema",
-    "packages/jtd",
-    "packages/variant",
-    "packages/codec"
+    "packages/*"
   ]
 }

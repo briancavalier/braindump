@@ -88,10 +88,11 @@ export const formatValue = (x: unknown): string =>
   x === null ? 'null'
     : x === undefined ? 'undefined'
       : typeof x === 'bigint' ? `${x}n`
-        : typeof x === 'number' || typeof x === 'boolean' ? `${x}`
-          : typeof x === 'string' ? `"${x}"`
-            : Array.isArray(x) ? `[${x.length > 3 ? `${x.slice(0, 3)}...` : x}]`
-              : JSON.stringify(x)
+        : typeof x === 'number' ? `${Object.is(x, -0) ? '-0' : x}`
+          : typeof x === 'boolean' ? `${x}`
+            : typeof x === 'string' ? `"${x}"`
+              : Array.isArray(x) ? `[${x.length > 3 ? `${x.slice(0, 3)}...` : x}]`
+                : JSON.stringify(x)
 
 export const formatStack = (s: string, indent: string) =>
   s.split('\n').map(s => `${indent}${s}`).join('\n')
