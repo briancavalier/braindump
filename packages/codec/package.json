@@ -15,7 +15,7 @@
   "scripts": {
     "build": "tsc --build",
     "lint": "eslint *.ts --fix",
-    "test": "node --test  -r esbuild-register ./src/*.test.ts",
+    "test": "node -r esbuild-register --test ./src/*.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "keywords": [],

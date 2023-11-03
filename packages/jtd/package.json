@@ -12,7 +12,7 @@
   "scripts": {
     "build": "tsc --build",
     "lint": "eslint *.ts --fix",
-    "test": "node --test -r esbuild-register ./*.test.ts | tap-arc",
+    "test": "node -r esbuild-register --test ./*.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "keywords": [],
