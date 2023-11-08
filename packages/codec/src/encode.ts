@@ -5,7 +5,12 @@ export const encode = <const S>(s: S) => <const A extends Decoded<S>>(a: A): Ok<
   _encode(s as Schema, a)
 
 export const _encode = (s: Schema, x: unknown): Ok<any> | Fail => {
-  if (s == null || typeof s === 'number' || typeof s === 'string' || typeof s === 'boolean' || typeof s === 'bigint')
+  if (typeof s === 'number')
+    return Number.isNaN(x) && Number.isNaN(x) ? ok(x)
+      : s === x ? ok(x)
+        : unexpected(s, x)
+
+  if (s == null || typeof s === 'string' || typeof s === 'boolean' || typeof s === 'bigint')
     return s === x ? ok(x) : unexpected(s, x)
 
   if (Array.isArray(s))

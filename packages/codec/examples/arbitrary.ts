@@ -1,7 +1,7 @@
-import { assertOk, codec, number, ok, pipe, string, unexpected } from '../src'
-import { arbitraryDecoded, arbitraryEncoded } from '../src/arbitrary-faker'
+import fc from 'fast-check'
 
-import { runExample } from './run-example'
+import { codec, number, ok, pipe, string, unexpected } from '../src'
+import { arbitraryDecoded, arbitraryEncoded } from '../src/fast-check'
 
 const numberToString =
   pipe(number,
@@ -13,17 +13,24 @@ const numberToString =
     },
   ))
 
+const stringToNumber =
+  pipe(string,
+    codec(
+      (x: string) => {
+        const n = Number.parseFloat(x)
+        return Number.isNaN(n) ? unexpected('numeric string', x) : ok(n)
+      },
+      (x: number) => ok(`${x}`)
+    ), number)
+
 const s = {
   foo: number,
   bar: string,
-  baz: {
-    x: numberToString
-  }
+  x: numberToString,
+  y: stringToNumber
 } as const
 
-console.log('arbitrary decoded', arbitraryDecoded(s))
+console.log('arbitrary decoded', fc.sample(arbitraryDecoded(s), 1))
+console.log('arbitrary decoded', fc.sample(arbitraryDecoded(s), 1))
 
-const x = arbitraryEncoded(s)
-console.log('arbitrary encoded', x)
-
-runExample(s, assertOk(x))
+console.log('arbitrary encoded', fc.sample(arbitraryEncoded(s), 1))

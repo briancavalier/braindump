@@ -1,17 +1,17 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
-import { simpleFaker as F } from '@faker-js/faker'
+import fc from 'fast-check'
 
-import { arbitraryDecoded } from './arbitrary-faker'
+import { arbitraryDecoded } from './fast-check'
 
 import { Decoded, Schema, array, arrayOf, assertOk, bigint, boolean, decode, encode, enumOf, number, object, optional, record, string, union } from '.'
 
 test('roundtripping', async t => {
   await t.test('literal', () => {
-    roundtrip(F.number.float())
-    roundtrip(F.string.alphanumeric({ length: { min: 0, max: 20 } }))
-    roundtrip(F.datatype.boolean())
+    fc.assert(fc.property(fc.float(), roundtrip))
+    fc.assert(fc.property(fc.string(), roundtrip))
+    fc.assert(fc.property(fc.boolean(), roundtrip))
   })
 
   await t.test('number', () => {
@@ -48,7 +48,11 @@ test('roundtripping', async t => {
   })
 
   await t.test('enum (object literal)', () =>
-    roundtrip(enumOf({ a: F.number.float(), b: F.number.float() })))
+    fc.assert(fc.property(fc.record({
+      a: fc.float(),
+      b: fc.float()
+    }), (e) =>
+      roundtrip(enumOf(e)))))
 
   await t.test('union', () =>
     roundtrip(union(number, string)))
@@ -73,11 +77,12 @@ test('roundtripping', async t => {
 })
 
 const roundtrip = <const S extends Schema>(s: S) =>
-  roundtripWith(s, assertOk(arbitraryDecoded(s)))
+  fc.assert(fc.property(arbitraryDecoded(s), x => roundtripWith(s, x)))
 
 const roundtripWith = <const S extends Schema>(s: S, d: Decoded<S>) => {
   const enc = encode(s)
   const dec = decode(s)
+
   // @ts-expect-error infinite
   const e1 = assertOk(enc(d))
   const d1 = assertOk(dec(e1))

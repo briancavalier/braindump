@@ -9,9 +9,6 @@
     "dist/*.d.ts",
     "dist/*.map"
   ],
-  "devDependencies": {
-    "@faker-js/faker": "^8.1.0"
-  },
   "scripts": {
     "build": "tsc --build",
     "lint": "eslint *.ts --fix",
@@ -20,5 +17,11 @@
   },
   "keywords": [],
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "fast-check": "^3.13.2"
+  },
+  "peerDependencies": {
+    "fast-check": "^3.13.2"
+  }
 }

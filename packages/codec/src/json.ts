@@ -14,7 +14,7 @@ export const json = <const S extends Schema>(s: S) => codec(
   },
   (x: Decoded<S>) => {
     // @ts-expect-error infinite
-    const r = encode(s as any)(x)
+    const r = encode(s)(x)
     return isOk(r) ? jsonStringify(r.value as any) : r
   }
 )

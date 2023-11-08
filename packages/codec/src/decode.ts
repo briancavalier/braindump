@@ -5,7 +5,12 @@ export const decode = <const S>(s: S) => <const A extends Encoded<S>>(a: A): Ok<
   _decode(s as Schema, a)
 
 export const _decode = (s: Schema, x: unknown): Ok<any> | Fail => {
-  if (s == null || typeof s === 'number' || typeof s === 'string' || typeof s === 'boolean' || typeof s === 'bigint')
+  if (typeof s === 'number')
+    return Number.isNaN(x) && Number.isNaN(x) ? ok(x)
+        : s === x ? ok(x)
+        : unexpected(s, x)
+
+  if (s == null || typeof s === 'string' || typeof s === 'boolean' || typeof s === 'bigint')
     return s === x ? ok(x) : unexpected(s, x)
 
   if (Array.isArray(s))
@@ -56,7 +61,7 @@ export const _decode = (s: Schema, x: unknown): Ok<any> | Fail => {
 }
 
 const decodeEnum = <Values extends Record<string, unknown>>(s: EnumOf<Values>, x: unknown) =>
-  Object.values(s.values).indexOf(x) >= 0 ? ok(x as Values[keyof Values]) : unexpected(s, x)
+  Object.values(s.values).includes(x) ? ok(x as Values[keyof Values]) : unexpected(s, x)
 
 const decodeArray = (s: ArrayOf<Schema>, x: readonly unknown[]) => {
   const r = decodeArrayItems((s as any).items, x)

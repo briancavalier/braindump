@@ -128,7 +128,7 @@ type StructuredSchema =
   | AnyBoolean
   | AnyObject
   | AnyArray
-  // encum
+  // enum
   | EnumOf<Record<string, unknown>>
   // Sum
   | Union<readonly unknown[]>
@@ -159,11 +159,11 @@ export type Decoded<S> =
   : S extends Codec<any, infer A> ? A
   : S extends readonly Schema[] ? { readonly [K in keyof S]: Decoded<S[K]> }
   : S extends readonly [...infer A extends unknown[], Rest<infer B>] ? readonly [...{ readonly [K in keyof A]: Decoded<A[K]> }, ...readonly Decoded<B>[]]
-  : S extends { readonly [s: PropertyKey]: Schema } ? { readonly [K in keyof S]: Decoded<S[K]> }
-  : S extends { readonly [s: PropertyKey]: Schema | Optional<Schema> }
+  : S extends { readonly [s: PropertyKey]: unknown } ? { readonly [K in keyof S]: Decoded<S[K]> }
+  : S extends { readonly [s: PropertyKey]: unknown | Optional<unknown> }
     ? { readonly [K in RequiredKeys<S>]: Decoded<S[K]> } &
     { readonly [K in OptionalKeys<S>]?: S[K] extends Optional<infer SS> ? Decoded<SS> : never }
-  : never
+  : unknown
 
 export type Encoded<S> =
   S extends number | bigint | string | boolean | null | undefined ? unknown
