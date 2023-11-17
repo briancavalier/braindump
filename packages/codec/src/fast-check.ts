@@ -4,16 +4,16 @@ import { assertOk } from './assert'
 import { _decode } from './decode'
 import { _encode } from './encode'
 import { formatSchema } from './format'
-import { Decoded, Encoded, Schema, isNamed, isOptional, schema } from './schema'
+import { Decoded, Encoded, isStructuredSchema, isOptional, schema } from './schema'
 
-export const arbitraryDecoded = <const S extends Schema>(s: S): fc.Arbitrary<Decoded<S>> => {
+export const arbitraryDecoded = <const S>(s: S): fc.Arbitrary<Decoded<S>> => {
   if (s == null || typeof s === 'number' || typeof s === 'string' || typeof s === 'boolean')
     return fc.constant(s as any)
 
   if (Array.isArray(s))
     return fc.tuple(...s.map(arbitraryDecoded as any) as any) as any
 
-  if (isNamed(s)) {
+  if (isStructuredSchema(s)) {
     const ss = s[schema]
     switch (ss) {
       case 'number': return fc.float() as any
@@ -24,7 +24,6 @@ export const arbitraryDecoded = <const S extends Schema>(s: S): fc.Arbitrary<Dec
       case 'array': return fc.array(fc.anything()) as any
       case 'enum': return fc.constantFrom(...Object.values(s.values)) as any
       case 'union': return fc.oneof(...(s.schemas.map(arbitraryDecoded as any) as any[])) as any
-      // @ts-expect-error infinite
       case 'record': return fc.dictionary(arbitraryDecoded(s.keys as any), arbitraryDecoded(s.values) as any) as any
       case 'arrayOf': return fc.array(arbitraryDecoded(s.items as any) as any) as any
       case 'lift': return arbitraryDecoded(s.schema as any) as any
@@ -64,14 +63,14 @@ export const arbitraryDecoded = <const S extends Schema>(s: S): fc.Arbitrary<Dec
   throw new Error(`Don't know how to generate decoded value for ${formatSchema(s)}`)
 }
 
-export const arbitraryEncoded = <const S extends Schema>(s: S): fc.Arbitrary<Encoded<S>> => {
+export const arbitraryEncoded = <const S>(s: S): fc.Arbitrary<Encoded<S>> => {
   if (s == null || typeof s === 'number' || typeof s === 'string' || typeof s === 'boolean')
     return fc.constant(s as any)
 
   if (Array.isArray(s))
     return fc.tuple(...s.map(arbitraryEncoded as any) as any) as any
 
-  if (isNamed(s)) {
+  if (isStructuredSchema(s)) {
     const ss = s[schema]
     switch (ss) {
       case 'number': return fc.float() as any

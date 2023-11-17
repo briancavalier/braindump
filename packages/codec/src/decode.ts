@@ -1,10 +1,10 @@
 import { Ok, Fail, ok, unexpected, isOk, at, all, missing, none, stopped } from './result'
-import { ArrayOf, Union, Schema, Decoded, Encoded, RecordOf, isOptional, isNamed, schema, isRest, EnumOf } from './schema'
+import { ArrayOf, Union, Schema, Decoded, Encoded, RecordOf, isOptional, isStructuredSchema, schema, isRest, EnumOf } from './schema'
 
 export const decode = <const S>(s: S) => <const A extends Encoded<S>>(a: A): Ok<Decoded<S>> | Fail =>
-  _decode(s as Schema, a)
+  _decode(s, a)
 
-export const _decode = (s: Schema, x: unknown): Ok<any> | Fail => {
+export const _decode = (s: unknown, x: unknown): Ok<any> | Fail => {
   if (typeof s === 'number')
     return Number.isNaN(x) && Number.isNaN(x) ? ok(x)
         : s === x ? ok(x)
@@ -16,14 +16,13 @@ export const _decode = (s: Schema, x: unknown): Ok<any> | Fail => {
   if (Array.isArray(s))
     return Array.isArray(x) ? decodeTuple(s, x) : unexpected(s, x)
 
-  if (isNamed(s)) {
-    const ss = s[schema]
-    switch (ss) {
+  if (isStructuredSchema(s)) {
+    switch (s[schema]) {
       case 'number':
       case 'string':
       case 'boolean':
       case 'bigint':
-        return ss === typeof x ? ok(x) : unexpected(s, x)
+        return s[schema] === typeof x ? ok(x) : unexpected(s, x)
       case 'object':
         return x && typeof x === 'object' && !Array.isArray(x)
           ? ok(x)
@@ -48,7 +47,7 @@ export const _decode = (s: Schema, x: unknown): Ok<any> | Fail => {
         return _decode(s.schema, x)
       case 'pipe':
         return s.codecs.reduce((r: Ok<unknown> | Fail, schema) =>
-          isOk(r) ? _decode(schema as Schema, r.value) : r, ok(x))
+          isOk(r) ? _decode(schema, r.value) : r, ok(x))
     }
   }
 
@@ -63,8 +62,8 @@ export const _decode = (s: Schema, x: unknown): Ok<any> | Fail => {
 const decodeEnum = <Values extends Record<string, unknown>>(s: EnumOf<Values>, x: unknown) =>
   Object.values(s.values).includes(x) ? ok(x as Values[keyof Values]) : unexpected(s, x)
 
-const decodeArray = (s: ArrayOf<Schema>, x: readonly unknown[]) => {
-  const r = decodeArrayItems((s as any).items, x)
+const decodeArray = (s: ArrayOf<unknown>, x: readonly unknown[]) => {
+  const r = decodeArrayItems(s.items as Schema, x)
   return isOk(r) ? r : stopped(x, r)
 }
 

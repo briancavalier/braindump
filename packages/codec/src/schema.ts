@@ -115,12 +115,12 @@ export const rest = <S extends Schema>(schema: S): Rest<S> => ({ [restSymbol]: '
 
 export const isRest = (s: unknown): s is Rest<unknown> => !!s && (s as Record<PropertyKey, unknown>)[restSymbol] === 'rest'
 
-export const isNamed = <S>(s: S): s is S & StructuredSchema =>
-  s && typeof (s as Record<PropertyKey, unknown>)[schema] === 'string'
+export const isStructuredSchema = (s: unknown): s is StructuredSchema =>
+  !!s && typeof (s as Record<PropertyKey, unknown>)[schema] === 'string'
 
-export type Schema = StructuredSchema | AdhocSchema
+export type Schema = Codec<any, any> | AdhocSchema
 
-type StructuredSchema =
+export type StructuredSchema =
   // Primitive
   | AnyNumber
   | AnyBigInt
@@ -141,7 +141,7 @@ type StructuredSchema =
   | Lift<any, any>
   | Pipe<any, any>
 
-type AdhocSchema =
+export type AdhocSchema =
   // Adhoc literal
   | number
   | bigint

@@ -1,11 +1,11 @@
 import { Fail } from './result'
-import { Schema, Union, isNamed, isOptional, schema } from './schema'
+import { Schema, Union, isStructuredSchema, isOptional, schema } from './schema'
 
-export const formatSchema = (s: Schema, indent = '', pad = '  '): string => {
+export const formatSchema = <const S>(s: S, indent = '', pad = '  '): string => {
   if (s == null || typeof s === 'number' || typeof s === 'string' || typeof s === 'boolean' || typeof s === 'bigint')
     return formatValue(s)
 
-  if (isNamed(s)) {
+  if (isStructuredSchema(s)) {
     const ss = s[schema]
     switch (ss) {
       case 'number':
@@ -18,18 +18,18 @@ export const formatSchema = (s: Schema, indent = '', pad = '  '): string => {
       case 'enum':
         return Object.values(s.values).map(v => `${v}`).join(' | ')
       case 'union':
-        return s.schemas.map(s => formatSchema(s as Schema, indent, pad)).join(' | ')
+        return s.schemas.map(s => formatSchema(s, indent, pad)).join(' | ')
       case 'record':
-        return `Record<${formatSchema(s.keys as Schema, indent, pad), formatSchema(s.values as Schema, indent, pad)}>`
+        return `Record<${formatSchema(s.keys, indent, pad), formatSchema(s.values, indent, pad)}>`
       case 'arrayOf':
-        return `readonly ${formatSchema(s.items as Schema, indent, pad)}[]`
+        return `readonly ${formatSchema(s.items, indent, pad)}[]`
       case 'refine':
       case 'transform':
         return ss
       case 'lift':
         return formatSchema(s.schema, indent, pad)
       case 'pipe':
-        return formatSchema(s.codecs[0] as Schema, indent, pad)
+        return formatSchema(s.codecs[0], indent, pad)
     }
   }
 
@@ -65,7 +65,7 @@ export const formatFail = (r: Fail, indent = '', pad = '  '): string => {
       return wrap(r.input, `${formatFail(r.error as Fail, indent + pad, pad)}\n${indent + pad}... (stopped after first error) ...`, indent)
     case 'none': {
       const s = r.schema
-      if (isNamed(s) && s[schema] === 'union')
+      if (isStructuredSchema(s) && s[schema] === 'union')
         return isSimpleUnion(s)
           ? formatSimpleUnion(r.input, r.schema as Schema, indent + pad, pad)
           : formatUnion(r.errors, indent + pad, pad)
@@ -97,14 +97,14 @@ export const formatValue = (x: unknown): string =>
 export const formatStack = (s: string, indent: string) =>
   s.split('\n').map(s => `${indent}${s}`).join('\n')
 
-const formatSimpleUnion = (input: unknown, s: Schema, indent: string, pad: string) =>
+const formatSimpleUnion = (input: unknown, s: unknown, indent: string, pad: string) =>
   `got ${formatSchema(input as any)}, expected ${formatSchema(s, indent, pad)}`
 
 const formatUnion = (errors: readonly unknown[], indent: string, pad: string) =>
   `No union schemas matched:${errors.map((e, i) => `\n---schema ${i}${indent}----------\n${indent}${formatFail(e as Fail, indent, pad)}`).join('')}`
 
 const isSimpleUnion = (s: Union<readonly unknown[]>) =>
-  s.schemas.every(s => (isNamed(s) || isAdhocPrimitive(s)))
+  s.schemas.every(s => (isStructuredSchema(s) || isAdhocPrimitive(s)))
 
 const isAdhocPrimitive = (x: unknown): x is number | string | boolean | null | undefined =>
   x == null || typeof x === 'number' || typeof x === 'string' || typeof x === 'boolean'

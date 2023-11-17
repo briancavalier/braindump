@@ -1,10 +1,10 @@
 import { Ok, Fail, ok, unexpected, isOk, at, all, missing, none, stopped } from './result'
-import { ArrayOf, Union, Schema, Decoded, Encoded, RecordOf, isOptional, schema, isNamed, isRest } from './schema'
+import { ArrayOf, Union, Schema, Decoded, Encoded, RecordOf, isOptional, schema, isStructuredSchema, isRest } from './schema'
 
 export const encode = <const S>(s: S) => <const A extends Decoded<S>>(a: A): Ok<Encoded<S>> | Fail =>
-  _encode(s as Schema, a)
+  _encode(s, a)
 
-export const _encode = (s: Schema, x: unknown): Ok<any> | Fail => {
+export const _encode = (s: unknown, x: unknown): Ok<any> | Fail => {
   if (typeof s === 'number')
     return Number.isNaN(x) && Number.isNaN(x) ? ok(x)
       : s === x ? ok(x)
@@ -16,7 +16,7 @@ export const _encode = (s: Schema, x: unknown): Ok<any> | Fail => {
   if (Array.isArray(s))
     return Array.isArray(x) ? encodeTuple(s, x) : unexpected(s, x)
 
-  if (isNamed(s)) {
+  if (isStructuredSchema(s)) {
     const ss = s[schema]
     switch (ss) {
       case 'number':
@@ -44,7 +44,7 @@ export const _encode = (s: Schema, x: unknown): Ok<any> | Fail => {
         return _encode(s.schema, x)
       case 'pipe':
         return s.codecs.reduceRight((r: Ok<unknown> | Fail, schema) =>
-          isOk(r) ? _encode(schema as Schema, r.value) : r, ok(x))
+          isOk(r) ? _encode(schema, r.value) : r, ok(x))
     }
   }
 
@@ -56,8 +56,8 @@ export const _encode = (s: Schema, x: unknown): Ok<any> | Fail => {
   return unexpected(s, x)
 }
 
-const encodeArray = (s: ArrayOf<Schema>, x: readonly unknown[]) => {
-  const r = encodeArrayItems((s as any).items, x)
+const encodeArray = (s: ArrayOf<unknown>, x: readonly unknown[]) => {
+  const r = encodeArrayItems(s.items as Schema, x)
   return isOk(r) ? r : stopped(x, r)
 }
 
