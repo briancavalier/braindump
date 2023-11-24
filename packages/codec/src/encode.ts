@@ -28,7 +28,7 @@ export const _encode = (s: unknown, x: unknown): Ok<any> | Fail => {
       case 'array':
       case 'enum':
         return ok(x)
-      case 'arrayOf':
+      case 'array-of':
         return Array.isArray(x) ? encodeArray(s as any, x) : unexpected(s, x)
       case 'record':
         return x && typeof x === 'object' && !Array.isArray(x)

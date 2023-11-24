@@ -25,7 +25,7 @@ export const arbitraryDecoded = <const S>(s: S): fc.Arbitrary<Decoded<S>> => {
       case 'enum': return fc.constantFrom(...Object.values(s.values)) as any
       case 'union': return fc.oneof(...(s.schemas.map(arbitraryDecoded as any) as any[])) as any
       case 'record': return fc.dictionary(arbitraryDecoded(s.keys as any), arbitraryDecoded(s.values) as any) as any
-      case 'arrayOf': return fc.array(arbitraryDecoded(s.items as any) as any) as any
+      case 'array-of': return fc.array(arbitraryDecoded(s.items as any) as any) as any
       case 'lift': return arbitraryDecoded(s.schema as any) as any
       case 'pipe': {
         const errors = []
@@ -83,7 +83,7 @@ export const arbitraryEncoded = <const S>(s: S): fc.Arbitrary<Encoded<S>> => {
       case 'union': return fc.oneof(...(s.schemas.map(arbitraryEncoded as any) as any[])) as any
       // @ts-expect-error infinite
       case 'record': return fc.dictionary(arbitraryEncoded(s.keys as any), arbitraryEncoded(s.values) as any) as any
-      case 'arrayOf': return fc.array(arbitraryEncoded(s.items as any) as any) as any
+      case 'array-of': return fc.array(arbitraryEncoded(s.items as any) as any) as any
       case 'lift': return arbitraryEncoded(s.schema as any) as any
       case 'pipe': {
         const errors = []
@@ -95,15 +95,6 @@ export const arbitraryEncoded = <const S>(s: S): fc.Arbitrary<Encoded<S>> => {
             errors.push(e)
           }
         }
-        // const errors = []
-        // for (let i = 0; i <= s.codecs.length; i++) {
-        //   try {
-        //     const x = arbitraryEncoded(s.codecs[i] as any) as fc.Arbitrary<unknown>
-        //     return x.map(x => assertOk(_encode({ [schema]: 'pipe', codecs: s.codecs.slice(0, i) }, x))) as any
-        //   } catch(e) {
-        //     errors.push(e)
-        //   }
-        // }
         throw new Error(`Don't know how to generate encoded value for ${formatSchema(s)}: ${errors}`)
       }
       default:

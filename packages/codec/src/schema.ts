@@ -40,11 +40,11 @@ export interface EnumOf<Values extends Record<string, unknown>> extends Codec<un
 export const enumOf = <const Values extends Record<string, string | number>>(values: Values): EnumOf<Values> => ({ [schema]: 'enum', values })
 
 export interface ArrayOf<Schema> extends Codec<readonly Encoded<Schema>[], readonly Decoded<Schema>[]> {
-  readonly [schema]: 'arrayOf',
+  readonly [schema]: 'array-of',
   readonly items: Schema
 }
 
-export const arrayOf = <const S extends Schema>(items: S): ArrayOf<S> => ({ [schema]: 'arrayOf', items })
+export const arrayOf = <const S extends Schema>(items: S): ArrayOf<S> => ({ [schema]: 'array-of', items })
 
 export interface RecordOf<K, V> extends Codec<Record<PropertyKey, unknown>, Record<Decoded<K> & PropertyKey, Decoded<V>>> {
   readonly [schema]: 'record',

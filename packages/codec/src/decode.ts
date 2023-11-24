@@ -37,7 +37,7 @@ export const _decode = (s: unknown, x: unknown): Ok<any> | Fail => {
         return x && typeof x === 'object' && !Array.isArray(x)
           ? decodeRecord(s as any, x as Record<any, unknown>)
           : unexpected(s, x)
-      case 'arrayOf':
+      case 'array-of':
         return Array.isArray(x) ? decodeArray(s as any, x) : unexpected(s, x)
       case 'refine':
         return s.refine(x) ? ok(x) : unexpected(s, x)

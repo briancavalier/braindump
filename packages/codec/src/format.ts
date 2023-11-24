@@ -21,7 +21,7 @@ export const formatSchema = <const S>(s: S, indent = '', pad = '  '): string => 
         return s.schemas.map(s => formatSchema(s, indent, pad)).join(' | ')
       case 'record':
         return `Record<${formatSchema(s.keys, indent, pad), formatSchema(s.values, indent, pad)}>`
-      case 'arrayOf':
+      case 'array-of':
         return `readonly ${formatSchema(s.items, indent, pad)}[]`
       case 'refine':
       case 'transform':
