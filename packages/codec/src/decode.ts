@@ -18,6 +18,10 @@ export const _decode = (s: unknown, x: unknown): Ok<any> | Fail => {
 
   if (isStructuredSchema(s)) {
     switch (s[schema]) {
+      case 'never':
+        return unexpected(s, x)
+      case 'unknown':
+        return ok(x)
       case 'number':
       case 'string':
       case 'boolean':

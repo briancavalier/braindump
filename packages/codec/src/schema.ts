@@ -7,6 +7,15 @@ export interface Codec<in out A, in out B> {
   readonly _b?: B
 }
 
+export interface Never extends Codec<unknown, never> { readonly [schema]: 'never' }
+export const never: Never = { [schema]: 'never' }
+
+export const isNever = (x: unknown): x is Never =>
+  isStructuredSchema(x) && x[schema] === 'never'
+
+export interface Unknown extends Codec<unknown, unknown> { readonly [schema]: 'unknown' }
+export const unknown: Unknown = { [schema]: 'unknown' }
+
 export interface AnyNumber extends Codec<unknown, number> { readonly [schema]: 'number' }
 export const number: AnyNumber = { [schema]: 'number' }
 
@@ -121,6 +130,8 @@ export const isStructuredSchema = (s: unknown): s is StructuredSchema =>
 export type Schema = Codec<any, any> | AdhocSchema
 
 export type StructuredSchema =
+  | Never
+  | Unknown
   // Primitive
   | AnyNumber
   | AnyBigInt

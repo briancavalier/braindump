@@ -19,6 +19,10 @@ export const _encode = (s: unknown, x: unknown): Ok<any> | Fail => {
   if (isStructuredSchema(s)) {
     const ss = s[schema]
     switch (ss) {
+      case 'never':
+        return unexpected(s, x)
+      case 'unknown':
+        return ok(x)
       case 'number':
       case 'string':
       case 'boolean':

@@ -5,35 +5,29 @@ import fc from 'fast-check'
 
 import { arbitraryDecoded } from './fast-check'
 
-import { Decoded, Schema, array, arrayOf, assertOk, bigint, boolean, decode, encode, enumOf, number, object, optional, record, string, union } from '.'
+import { Decoded, Schema, array, arrayOf, assertOk, bigint, boolean, decode, encode, enumOf, number, object, optional, record, string, union, unknown } from '.'
 
 test('roundtripping', async t => {
+  await t.test('unknown', () =>
+    roundtrip(unknown))
+
   await t.test('literal', () => {
     fc.assert(fc.property(fc.float(), roundtrip))
     fc.assert(fc.property(fc.string(), roundtrip))
     fc.assert(fc.property(fc.boolean(), roundtrip))
   })
 
-  await t.test('number', () => {
-    roundtripWith(number, 0)
-    roundtripWith(number, 1)
-    roundtripWith(number, -1)
-    roundtrip(number)
-  })
+  await t.test('number', () =>
+    roundtrip(number))
 
-  await t.test('bigint', () => {
-    roundtripWith(bigint, 0n)
-    roundtripWith(bigint, 1n)
-    roundtripWith(bigint, -1n)
-    roundtrip(bigint)
-  })
+  await t.test('bigint', () =>
+    roundtrip(bigint))
 
   await t.test('string', () =>
     roundtrip(string))
 
   await t.test('boolean', () => {
-    roundtripWith(boolean, true)
-    roundtripWith(boolean, false)
+    roundtrip(boolean)
   })
 
   await t.test('object', () =>

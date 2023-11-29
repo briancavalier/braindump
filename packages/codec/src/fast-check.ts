@@ -11,11 +11,16 @@ export const arbitraryDecoded = <const S>(s: S): fc.Arbitrary<Decoded<S>> => {
     return fc.constant(s as any)
 
   if (Array.isArray(s))
-    return fc.tuple(...s.map(arbitraryDecoded as any) as any) as any
+    return fc.tuple(...s.map(s => arbitraryDecoded(s)) as any) as any
 
   if (isStructuredSchema(s)) {
     const ss = s[schema]
     switch (ss) {
+      case 'never':
+        return fc.integer().map(() => {
+          throw new Error(`Can't generate decoded value for ${formatSchema(s)}`)
+        })
+      case 'unknown': return fc.anything() as any
       case 'number': return fc.float() as any
       case 'bigint': return fc.bigInt() as any
       case 'string': return fc.string() as any
@@ -50,7 +55,7 @@ export const arbitraryDecoded = <const S>(s: S): fc.Arbitrary<Decoded<S>> => {
     for (const k of Object.keys(s)) {
       const sk = (s as Record<string, any>)[k]
       if(isOptional(sk)) {
-        a[k] = arbitraryDecoded(sk.schema as any)
+        a[k] = arbitraryDecoded(sk.schema)
       } else {
         a[k] = arbitraryDecoded(sk)
         requiredKeys.push(k)
@@ -73,6 +78,11 @@ export const arbitraryEncoded = <const S>(s: S): fc.Arbitrary<Encoded<S>> => {
   if (isStructuredSchema(s)) {
     const ss = s[schema]
     switch (ss) {
+      case 'never':
+        return fc.integer().map(() => {
+          throw new Error(`Can't generate decoded value for ${formatSchema(s)}`)
+        })
+      case 'unknown': return fc.anything() as any
       case 'number': return fc.float() as any
       case 'bigint': return fc.bigInt() as any
       case 'string': return fc.string() as any

@@ -8,6 +8,8 @@ export const formatSchema = <const S>(s: S, indent = '', pad = '  '): string => 
   if (isStructuredSchema(s)) {
     const ss = s[schema]
     switch (ss) {
+      case 'never':
+      case 'unknown':
       case 'number':
       case 'string':
       case 'boolean':
