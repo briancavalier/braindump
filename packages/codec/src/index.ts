@@ -1,4 +1,5 @@
 export { assertOk } from './assert'
+export * from './attempt'
 export { decode } from './decode'
 export { encode } from './encode'
 export * from './format'

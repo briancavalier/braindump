@@ -5,7 +5,7 @@ import fc from 'fast-check'
 
 import { arbitraryDecoded } from './fast-check'
 
-import { Decoded, Schema, array, arrayOf, assertOk, bigint, boolean, decode, encode, enumOf, number, object, optional, record, string, union, unknown } from '.'
+import { Decoded, Schema, array, arrayOf, assertOk, bigint, boolean, decode, encode, enumOf, number, object, optional, record, string, tstring, union, unknown } from '.'
 
 test('roundtripping', async t => {
   await t.test('unknown', () =>
@@ -51,7 +51,7 @@ test('roundtripping', async t => {
   await t.test('union', () =>
     roundtrip(union(number, string)))
 
-  await t.test('arrayOf', () =>
+  await t.test('array-of', () =>
     roundtrip(arrayOf(number)))
 
   await t.test('record', () =>
@@ -68,6 +68,9 @@ test('roundtripping', async t => {
         d: string,
       }
     }))
+
+  await t.test('template-literal', () =>
+    roundtrip(tstring('hello ', string, ', this is ', number, ', ', 1, ', ', boolean, ', ', true, ', ', false, ', ', bigint, ', ', 123n)))
 })
 
 const roundtrip = <const S extends Schema>(s: S) =>

@@ -1,5 +1,5 @@
 import { Fail } from './result'
-import { Schema, Union, isStructuredSchema, isOptional, schema } from './schema'
+import { Schema, Union, isStructuredSchema, isOptional, schema, TemplateLiteral, TemplateLiteralComponentSchema } from './schema'
 
 export const formatSchema = <const S>(s: S, indent = '', pad = '  '): string => {
   if (s == null || typeof s === 'number' || typeof s === 'string' || typeof s === 'boolean' || typeof s === 'bigint')
@@ -25,6 +25,8 @@ export const formatSchema = <const S>(s: S, indent = '', pad = '  '): string => 
         return `Record<${formatSchema(s.keys, indent, pad), formatSchema(s.values, indent, pad)}>`
       case 'array-of':
         return `readonly ${formatSchema(s.items, indent, pad)}[]`
+      case 'template-literal':
+        return formatTemplateLiteral(s)
       case 'refine':
       case 'transform':
         return ss
@@ -38,17 +40,27 @@ export const formatSchema = <const S>(s: S, indent = '', pad = '  '): string => 
   if (Array.isArray(s)) {
     return `[${s.map(s => formatSchema(s, indent, pad)).join(', ')}]`
   } else if (s && typeof s === 'object') {
-    return `{${Object.keys(s).reduce(
-      (r, k) => {
-        const sk = (s as any)[k]
-        const opt = isOptional(sk)
-        return r + `\n${indent + pad}${k}${opt ? '?' : ''}: ${formatSchema(opt ? sk.schema : sk, indent + pad, pad)}`
-      }, '')
-      }\n${indent}}`
+    return formatProperties(s as Record<PropertyKey, Schema>, indent, pad)
   }
 
   return JSON.stringify(s, null, pad)
 }
+
+const formatTemplateLiteral = (s: TemplateLiteral<readonly TemplateLiteralComponentSchema[], any>, indent = '', pad = '') =>
+  '`' + s.schemas.map(s => {
+    if (typeof s === 'string' || typeof s === 'number' || typeof s === 'bigint' || typeof s === 'boolean')
+      return `${s}`
+    return '${' + formatSchema(s, indent, pad) + '}'
+  }).join('') + '`'
+
+const formatProperties = (s: Record<PropertyKey, Schema>, indent = '', pad = '') =>
+  `{${Object.keys(s).reduce(
+    (r, k) => {
+      const sk = (s as any)[k]
+      const opt = isOptional(sk)
+      return r + `\n${indent + pad}${k}${opt ? '?' : ''}: ${formatSchema(opt ? sk.schema : sk, indent + pad, pad)}`
+    }, '')
+  }\n${indent}}`
 
 const wrap = (input: unknown, s: string, indent: string) => {
   const [start, end] = Array.isArray(input) ? ['[', ']'] : ['{', '}']
@@ -109,4 +121,4 @@ const isSimpleUnion = (s: Union<readonly unknown[]>) =>
   s.schemas.every(s => (isStructuredSchema(s) || isAdhocPrimitive(s)))
 
 const isAdhocPrimitive = (x: unknown): x is number | string | boolean | null | undefined =>
-  x == null || typeof x === 'number' || typeof x === 'string' || typeof x === 'boolean'
+  x == null || typeof x === 'number' || typeof x === 'bigint' || typeof x === 'string' || typeof x === 'boolean'

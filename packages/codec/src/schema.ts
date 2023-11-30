@@ -67,6 +67,28 @@ export const propertyKey = union(string, number)
 
 export const record = <K extends PropertyKeySchema, V>(keys: K, values: V): RecordOf<K, V> => ({ [schema]: 'record', keys, values })
 
+export type TemplateLiteralComponentSchema =
+  | string | AnyString
+  | number | AnyNumber
+  | bigint | AnyBigInt
+  | boolean | AnyBoolean
+  | Transform<string, any>
+  | Union<readonly TemplateLiteralComponentSchema[]>
+  | TemplateLiteral<readonly TemplateLiteralComponentSchema[], unknown>
+
+export interface TemplateLiteral<Schemas extends readonly unknown[], S> extends Codec<string, S> {
+  readonly [schema]: 'template-literal'
+  readonly schemas: Schemas
+}
+
+export const tstring = <const Schemas extends readonly TemplateLiteralComponentSchema[]>(...schemas: Schemas): TemplateLiteral<Schemas, Join<Schemas>> =>
+  ({ [schema]: 'template-literal', schemas })
+
+type Join<Schemas extends readonly TemplateLiteralComponentSchema[]> =
+  Schemas extends readonly [infer S extends TemplateLiteralComponentSchema, ...infer T extends readonly TemplateLiteralComponentSchema[]]
+    ? `${Decoded<S>}${Join<T>}`
+    : ''
+
 export interface Refine<A, B extends A> extends Codec<A, B> {
   readonly [schema]: 'refine',
   readonly refine: (a: A) => a is B
@@ -136,6 +158,7 @@ export type StructuredSchema =
   | AnyNumber
   | AnyBigInt
   | AnyString
+  | TemplateLiteral<readonly TemplateLiteralComponentSchema[], any>
   | AnyBoolean
   | AnyObject
   | AnyArray

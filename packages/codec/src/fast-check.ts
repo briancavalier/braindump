@@ -7,7 +7,7 @@ import { formatSchema } from './format'
 import { Decoded, Encoded, isStructuredSchema, isOptional, schema } from './schema'
 
 export const arbitraryDecoded = <const S>(s: S): fc.Arbitrary<Decoded<S>> => {
-  if (s == null || typeof s === 'number' || typeof s === 'string' || typeof s === 'boolean')
+  if (s == null || typeof s === 'number' || typeof s === 'bigint' || typeof s === 'string' || typeof s === 'boolean')
     return fc.constant(s as any)
 
   if (Array.isArray(s))
@@ -31,6 +31,8 @@ export const arbitraryDecoded = <const S>(s: S): fc.Arbitrary<Decoded<S>> => {
       case 'union': return fc.oneof(...(s.schemas.map(arbitraryDecoded as any) as any[])) as any
       case 'record': return fc.dictionary(arbitraryDecoded(s.keys as any), arbitraryDecoded(s.values) as any) as any
       case 'array-of': return fc.array(arbitraryDecoded(s.items as any) as any) as any
+      case 'template-literal':
+        return arbitraryDecoded(s.schemas).map(x => x.join('')) as any
       case 'lift': return arbitraryDecoded(s.schema as any) as any
       case 'pipe': {
         const errors = []
@@ -69,7 +71,7 @@ export const arbitraryDecoded = <const S>(s: S): fc.Arbitrary<Decoded<S>> => {
 }
 
 export const arbitraryEncoded = <const S>(s: S): fc.Arbitrary<Encoded<S>> => {
-  if (s == null || typeof s === 'number' || typeof s === 'string' || typeof s === 'boolean')
+  if (s == null || typeof s === 'number' || typeof s === 'bigint' || typeof s === 'string' || typeof s === 'boolean')
     return fc.constant(s as any)
 
   if (Array.isArray(s))
