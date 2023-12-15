@@ -11,11 +11,13 @@ export const formatSchema = <const S>(s: S, indent = '', pad = '  '): string => 
       case 'never':
       case 'unknown':
       case 'number':
+      case 'bigint':
+      case 'int':
+      case 'float':
       case 'string':
       case 'boolean':
       case 'object':
       case 'array':
-      case 'bigint':
         return ss
       case 'enum':
         return Object.values(s.values).map(v => `${v}`).join(' | ')

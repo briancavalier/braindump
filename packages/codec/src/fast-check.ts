@@ -23,6 +23,8 @@ export const arbitraryDecoded = <const S>(s: S): fc.Arbitrary<Decoded<S>> => {
       case 'unknown': return fc.anything() as any
       case 'number': return fc.float() as any
       case 'bigint': return fc.bigInt() as any
+      case 'int': return fc.integer() as any
+      case 'float': return fc.float({ noNaN: true, noDefaultInfinity: true }) as any
       case 'string': return fc.string() as any
       case 'boolean': return fc.boolean() as any
       case 'object': return fc.object() as any
@@ -87,6 +89,8 @@ export const arbitraryEncoded = <const S>(s: S): fc.Arbitrary<Encoded<S>> => {
       case 'unknown': return fc.anything() as any
       case 'number': return fc.float() as any
       case 'bigint': return fc.bigInt() as any
+      case 'int': return fc.integer() as any
+      case 'float': return fc.float({ noNaN: true, noDefaultInfinity: true }) as any
       case 'string': return fc.string() as any
       case 'boolean': return fc.boolean() as any
       case 'object': return fc.object() as any

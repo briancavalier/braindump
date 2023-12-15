@@ -5,7 +5,7 @@ import fc from 'fast-check'
 
 import { arbitraryDecoded } from './fast-check'
 
-import { Decoded, Schema, array, arrayOf, assertOk, bigint, boolean, decode, encode, enumOf, number, object, optional, record, string, tstring, union, unknown } from '.'
+import { Decoded, Schema, array, arrayOf, assertOk, bigint, boolean, decode, encode, enumOf, float, int, number, object, optional, record, string, tstring, union, unknown } from '.'
 
 test('roundtripping', async t => {
   await t.test('unknown', () =>
@@ -23,12 +23,17 @@ test('roundtripping', async t => {
   await t.test('bigint', () =>
     roundtrip(bigint))
 
+  await t.test('int', () =>
+    roundtrip(int))
+
+  await t.test('float', () =>
+    roundtrip(float))
+
   await t.test('string', () =>
     roundtrip(string))
 
-  await t.test('boolean', () => {
-    roundtrip(boolean)
-  })
+  await t.test('boolean', () =>
+    roundtrip(boolean))
 
   await t.test('object', () =>
     roundtrip(object))
@@ -70,7 +75,7 @@ test('roundtripping', async t => {
     }))
 
   await t.test('template-literal', () =>
-    roundtrip(tstring('hello ', string, ', this is ', number, ', ', 1, ', ', boolean, ', ', true, ', ', false, ', ', bigint, ', ', 123n)))
+    roundtrip(tstring('hello ', string, ', this is ', number, ', ', 1, ', ', boolean, ', ', true, ', ', false, ', ', bigint, ', ', 123n, ', ', int)))
 })
 
 const roundtrip = <const S extends Schema>(s: S) =>

@@ -7,7 +7,7 @@ export const decode = <const S>(s: S) => <const A extends Encoded<S>>(a: A): Ok<
 
 export const _decode = (s: unknown, x: unknown): Ok<any> | Fail => {
   if (typeof s === 'number')
-    return Number.isNaN(x) && Number.isNaN(x) ? ok(x)
+    return Number.isNaN(s) && Number.isNaN(x) ? ok(x)
         : s === x ? ok(x)
         : unexpected(s, x)
 
@@ -28,6 +28,10 @@ export const _decode = (s: unknown, x: unknown): Ok<any> | Fail => {
       case 'boolean':
       case 'bigint':
         return s[schema] === typeof x ? ok(x) : unexpected(s, x)
+      case 'int':
+        return typeof x === 'number' && Number.isSafeInteger(x) ? ok(x) : unexpected(s, x)
+      case 'float':
+        return typeof x === 'number' && Number.isFinite(x) ? ok(x) : unexpected(s, x)
       case 'object':
         return x && typeof x === 'object' && !Array.isArray(x)
           ? ok(x)

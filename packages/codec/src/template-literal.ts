@@ -21,6 +21,8 @@ const joinSchema = (handleSchema: (s: Schema, x: string) => Ok<string> | Fail, s
       case 'string':
       case 'number':
       case 'bigint':
+      case 'int':
+      case 'float':
       case 'boolean':
       case 'template-literal':
         return ok(group)
@@ -50,7 +52,9 @@ const regexForSchema = (s: TemplateLiteralComponentSchema): string => {
     switch (s[schema]) {
       case 'string': return '(.*)'
       case 'number': return numberRx
-      case 'bigint': return String.raw`([+-]?\d+)`
+      case 'bigint':
+      case 'int': return String.raw`([+-]?\d+)`
+      case 'float': return floatRx
       case 'boolean': return '(true|false)'
       case 'template-literal': return regexFor(s)
       case 'union': return `(${s.schemas.map(s => regexForSchema(s as any)).join('|')})`
@@ -60,3 +64,4 @@ const regexForSchema = (s: TemplateLiteralComponentSchema): string => {
 }
 
 const numberRx = String.raw`([-+]?(?:(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?|Infinity|NaN))`
+const floatRx = String.raw`([-+]?(?:(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?))`

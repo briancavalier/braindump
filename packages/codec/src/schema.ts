@@ -19,6 +19,12 @@ export const unknown: Unknown = { [schema]: 'unknown' }
 export interface AnyNumber extends Codec<unknown, number> { readonly [schema]: 'number' }
 export const number: AnyNumber = { [schema]: 'number' }
 
+export interface AnyInt extends Codec<unknown, number> { readonly [schema]: 'int' }
+export const int: AnyInt = { [schema]: 'int' }
+
+export interface AnyFloat extends Codec<unknown, number> { readonly [schema]: 'float' }
+export const float: AnyFloat = { [schema]: 'float' }
+
 export interface AnyBigInt extends Codec<unknown, bigint> { readonly [schema]: 'bigint' }
 export const bigint: AnyBigInt = { [schema]: 'bigint' }
 
@@ -69,7 +75,7 @@ export const record = <K extends PropertyKeySchema, V>(keys: K, values: V): Reco
 
 export type TemplateLiteralComponentSchema =
   | string | AnyString
-  | number | AnyNumber
+  | number | AnyNumber | AnyInt | AnyFloat
   | bigint | AnyBigInt
   | boolean | AnyBoolean
   | Transform<string, any>
@@ -157,6 +163,8 @@ export type StructuredSchema =
   // Primitive
   | AnyNumber
   | AnyBigInt
+  | AnyInt
+  | AnyFloat
   | AnyString
   | TemplateLiteral<readonly TemplateLiteralComponentSchema[], any>
   | AnyBoolean
