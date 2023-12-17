@@ -80,20 +80,23 @@ export type TemplateLiteralComponentSchema =
   | boolean | AnyBoolean
   | Transform<string, any>
   | Union<readonly TemplateLiteralComponentSchema[]>
-  | TemplateLiteral<readonly TemplateLiteralComponentSchema[], unknown>
+  | TemplateLiteral<unknown>
 
-export interface TemplateLiteral<Schemas extends readonly unknown[], S> extends Codec<string, S> {
+export interface TemplateLiteral<S> extends Codec<string, S> {
   readonly [schema]: 'template-literal'
-  readonly schemas: Schemas
+  readonly schemas: readonly TemplateLiteralComponentSchema[]
 }
 
-export const tstring = <const Schemas extends readonly TemplateLiteralComponentSchema[]>(...schemas: Schemas): TemplateLiteral<Schemas, Join<Schemas>> =>
+export const tstring = <const Schemas extends readonly TemplateLiteralComponentSchema[]>(...schemas: Schemas): TemplateLiteral<Join<Schemas>> =>
   ({ [schema]: 'template-literal', schemas })
 
 type Join<Schemas extends readonly TemplateLiteralComponentSchema[]> =
   Schemas extends readonly [infer S extends TemplateLiteralComponentSchema, ...infer T extends readonly TemplateLiteralComponentSchema[]]
     ? `${Decoded<S>}${Join<T>}`
     : ''
+
+export const isTemplateLiteral = (s: unknown): s is TemplateLiteral<string> =>
+  isStructuredSchema(s) && s[schema] === 'template-literal'
 
 export interface Refine<A, B extends A> extends Codec<A, B> {
   readonly [schema]: 'refine',
@@ -166,7 +169,7 @@ export type StructuredSchema =
   | AnyInt
   | AnyFloat
   | AnyString
-  | TemplateLiteral<readonly TemplateLiteralComponentSchema[], any>
+  | TemplateLiteral<any>
   | AnyBoolean
   | AnyObject
   | AnyArray

@@ -1,8 +1,8 @@
 
 import { Fail, Ok, isOk, ok, unexpected } from './result'
-import { Schema, TemplateLiteral, TemplateLiteralComponentSchema, schema } from './schema'
+import { Schema, TemplateLiteral, TemplateLiteralComponentSchema, isTemplateLiteral, schema } from './schema'
 
-export const join = <S>(handleSchema: (s: Schema, x: string) => Ok<string> | Fail, t: TemplateLiteral<readonly TemplateLiteralComponentSchema[], S>, groups: readonly string[], original: string) => {
+export const join = <S>(handleSchema: (s: Schema, x: string) => Ok<string> | Fail, t: TemplateLiteral<S>, groups: readonly string[], original: string) => {
   let result = ''
   for (let i = 0; i < t.schemas.length; i++) {
     const r = joinSchema(handleSchema, t.schemas[i], groups[i], original)
@@ -39,7 +39,13 @@ const joinSchema = (handleSchema: (s: Schema, x: string) => Ok<string> | Fail, s
   }
 }
 
-export const regexFor = <S>(t: TemplateLiteral<readonly TemplateLiteralComponentSchema[], S>) => {
+export function regexFor(t: TemplateLiteral<string>): string
+export function regexFor(t: Schema): undefined
+export function regexFor(t: Schema): string | undefined {
+  return isTemplateLiteral(t) ? `^${buildRegex(t)}$` : undefined
+}
+
+export const buildRegex = (t: TemplateLiteral<string>) => {
   let rx = ''
   for (const s of t.schemas) rx += regexForSchema(s)
   return rx
@@ -56,7 +62,7 @@ const regexForSchema = (s: TemplateLiteralComponentSchema): string => {
       case 'int': return String.raw`([+-]?\d+)`
       case 'float': return floatRx
       case 'boolean': return '(true|false)'
-      case 'template-literal': return regexFor(s)
+      case 'template-literal': return buildRegex(s as any)
       case 'union': return `(${s.schemas.map(s => regexForSchema(s as any)).join('|')})`
       case 'transform': return '(.*)'
     }
