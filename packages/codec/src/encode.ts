@@ -1,5 +1,5 @@
 import { Ok, Fail, ok, unexpected, isOk, at, all, missing, none, stopped } from './result'
-import { ArrayOf, Union, Schema, Decoded, Encoded, RecordOf, isOptional, schema, isStructuredSchema, isRest, TemplateLiteral, TemplateLiteralComponentSchema } from './schema'
+import { ArrayOf, Union, Schema, Decoded, Encoded, RecordOf, isOptional, schema, isStructuredSchema, isRest, TemplateLiteral } from './schema'
 import { join, regexFor } from './template-literal'
 
 export const encode = <const S>(s: S) => <const A extends Decoded<S>>(a: A): Ok<Encoded<S>> | Fail =>
@@ -83,7 +83,7 @@ const encodeArrayItems = (items: Schema, x: readonly unknown[], i = 0) => {
 }
 
 
-const encodeTemplateLiteral = <S>(s: TemplateLiteral<readonly TemplateLiteralComponentSchema[], S>, x: unknown) => {
+const encodeTemplateLiteral = <S>(s: TemplateLiteral<S>, x: unknown) => {
   if (typeof x !== 'string') return unexpected(s, x)
 
   const rx = new RegExp(`^${regexFor(s)}$`)

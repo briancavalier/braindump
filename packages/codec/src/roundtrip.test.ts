@@ -3,7 +3,7 @@ import { test } from 'node:test'
 
 import fc from 'fast-check'
 
-import { arbitraryDecoded } from './fast-check'
+import { decoded } from './fast-check'
 
 import { Decoded, Schema, array, arrayOf, assertOk, bigint, boolean, decode, encode, enumOf, float, int, number, object, optional, record, string, tstring, union, unknown } from '.'
 
@@ -79,7 +79,7 @@ test('roundtripping', async t => {
 })
 
 const roundtrip = <const S extends Schema>(s: S) =>
-  fc.assert(fc.property(arbitraryDecoded(s), x => roundtripWith(s, x)))
+  fc.assert(fc.property(decoded(s), x => roundtripWith(s, x)))
 
 const roundtripWith = <const S extends Schema>(s: S, d: Decoded<S>) => {
   const enc = encode(s)
