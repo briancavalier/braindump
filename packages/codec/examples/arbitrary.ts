@@ -1,7 +1,7 @@
 import fc from 'fast-check'
 
 import { codec, number, ok, pipe, string, unexpected } from '../src'
-import { arbitraryDecoded, arbitraryEncoded } from '../src/fast-check'
+import { decoded, encoded } from '../src/fast-check'
 
 const numberToString =
   pipe(number,
@@ -30,7 +30,6 @@ const s = {
   y: stringToNumber
 } as const
 
-console.log('arbitrary decoded', fc.sample(arbitraryDecoded(s), 1))
-console.log('arbitrary decoded', fc.sample(arbitraryDecoded(s), 1))
+console.log('arbitrary decoded', fc.sample(decoded(s), 1))
 
-console.log('arbitrary encoded', fc.sample(arbitraryEncoded(s), 1))
+console.log('arbitrary encoded', fc.sample(encoded(s), 1))
