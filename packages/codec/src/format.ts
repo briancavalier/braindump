@@ -48,7 +48,7 @@ export const formatSchema = <const S>(s: S, indent = '', pad = '  '): string => 
   return JSON.stringify(s, null, pad)
 }
 
-const formatTemplateLiteral = (s: TemplateLiteral<readonly TemplateLiteralComponentSchema[], any>, indent = '', pad = '') =>
+const formatTemplateLiteral = (s: TemplateLiteral<readonly TemplateLiteralComponentSchema[]>, indent = '', pad = '') =>
   '`' + s.schemas.map(s => {
     if (typeof s === 'string' || typeof s === 'number' || typeof s === 'bigint' || typeof s === 'boolean')
       return `${s}`
@@ -100,6 +100,8 @@ export const formatFail = (r: Fail, indent = '', pad = '  '): string => {
   }
 }
 
+const maxArrayFormatLength = 3
+
 export const formatValue = (x: unknown): string =>
   x === null ? 'null'
     : x === undefined ? 'undefined'
@@ -107,7 +109,7 @@ export const formatValue = (x: unknown): string =>
         : typeof x === 'number' ? `${Object.is(x, -0) ? '-0' : x}`
           : typeof x === 'boolean' ? `${x}`
             : typeof x === 'string' ? `"${x}"`
-              : Array.isArray(x) ? `[${x.length > 3 ? `${x.slice(0, 3)}...` : x}]`
+              : Array.isArray(x) ? `[${x.length > maxArrayFormatLength ? `${x.slice(0, maxArrayFormatLength).map(formatValue)},...and ${x.length - maxArrayFormatLength} more` : x.map(formatValue)}]`
                 : JSON.stringify(x)
 
 export const formatStack = (s: string, indent: string) =>
@@ -117,7 +119,7 @@ const formatSimpleUnion = (input: unknown, s: unknown, indent: string, pad: stri
   `got ${formatSchema(input as any)}, expected ${formatSchema(s, indent, pad)}`
 
 const formatUnion = (errors: readonly unknown[], indent: string, pad: string) =>
-  `No union schemas matched:${errors.map((e, i) => `\n---schema ${i}${indent}----------\n${indent}${formatFail(e as Fail, indent, pad)}`).join('')}`
+  `No union schemas matched:${errors.map((e, i) => `\n${indent}--- schema ${i} ---\n${indent}${formatFail(e as Fail, indent, pad)}`).join('')}`
 
 const isSimpleUnion = (s: Union<readonly unknown[]>) =>
   s.schemas.every(s => (isStructuredSchema(s) || isAdhocPrimitive(s)))

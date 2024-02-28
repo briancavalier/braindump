@@ -93,6 +93,8 @@ const encodeTemplateLiteral = <S>(s: TemplateLiteral<S>, x: unknown) => {
 }
 
 const encodeTuple = (s: readonly Schema[], x: readonly unknown[]) => {
+  if (s.length !== x.length) return unexpected(s, x)
+
   const a = []
   const e = []
   for (let i = 0; i < s.length; i++) {
