@@ -53,6 +53,8 @@ export const _encode = (s: unknown, x: unknown): Ok<any> | Fail => {
         return s.encode(x)
       case 'lift':
         return _encode(s.schema, x)
+      case 'lazy':
+        return _encode(s.f(), x)
       case 'pipe':
         return s.codecs.reduceRight((r: Ok<unknown> | Fail, schema) =>
           isOk(r) ? _encode(schema, r.value) : r, ok(x))

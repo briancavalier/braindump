@@ -24,7 +24,7 @@ export const formatSchema = <const S>(s: S, indent = '', pad = '  '): string => 
       case 'union':
         return s.schemas.map(s => formatSchema(s, indent, pad)).join(' | ')
       case 'record':
-        return `Record<${formatSchema(s.keys, indent, pad), formatSchema(s.values, indent, pad)}>`
+        return `Record<${formatSchema(s.keys, indent, pad)}, ${formatSchema(s.values, indent, pad)}>`
       case 'array-of':
         return `readonly ${formatSchema(s.items, indent, pad)}[]`
       case 'template-literal':
@@ -34,6 +34,8 @@ export const formatSchema = <const S>(s: S, indent = '', pad = '  '): string => 
         return ss
       case 'lift':
         return formatSchema(s.schema, indent, pad)
+      case 'lazy':
+        return `${s.name}`
       case 'pipe':
         return formatSchema(s.codecs[0], indent, pad)
     }
@@ -100,7 +102,7 @@ export const formatFail = (r: Fail, indent = '', pad = '  '): string => {
   }
 }
 
-const maxArrayFormatLength = 3
+const maxArrayFormatLength = 5
 
 export const formatValue = (x: unknown): string =>
   x === null ? 'null'
@@ -108,15 +110,16 @@ export const formatValue = (x: unknown): string =>
       : typeof x === 'bigint' ? `${x}n`
         : typeof x === 'number' ? `${Object.is(x, -0) ? '-0' : x}`
           : typeof x === 'boolean' ? `${x}`
-            : typeof x === 'string' ? `"${x}"`
+            : typeof x === 'string' ? `'${x}'`
               : Array.isArray(x) ? `[${x.length > maxArrayFormatLength ? `${x.slice(0, maxArrayFormatLength).map(formatValue)},...and ${x.length - maxArrayFormatLength} more` : x.map(formatValue)}]`
-                : JSON.stringify(x)
+                : typeof x === 'object' ? `{${Object.entries(x).map(([k, v]) => `${k}: ${formatValue(v)}`).join(', ')}}`
+                  : `${x}`
 
 export const formatStack = (s: string, indent: string) =>
   s.split('\n').map(s => `${indent}${s}`).join('\n')
 
 const formatSimpleUnion = (input: unknown, s: unknown, indent: string, pad: string) =>
-  `got ${formatSchema(input as any)}, expected ${formatSchema(s, indent, pad)}`
+  `got ${formatValue(input as any)}, expected ${formatSchema(s, indent, pad)}`
 
 const formatUnion = (errors: readonly unknown[], indent: string, pad: string) =>
   `No union schemas matched:${errors.map((e, i) => `\n${indent}--- schema ${i} ---\n${indent}${formatFail(e as Fail, indent, pad)}`).join('')}`

@@ -62,6 +62,7 @@ const buildSchema = <const S>(s: S, encoded: boolean): Record<string, unknown> =
           pattern: regexFor(s)
         }
       case 'lift': return buildSchema(s.schema, encoded)
+      case 'lazy': return buildSchema(s.f(), encoded)
       case 'pipe': return buildSchema(s.codecs[encoded ? 0 : s.codecs.length - 1], encoded)
       default:
         throw new Error(`Don't know how to generate decoded value for ${formatSchema(s)}`)

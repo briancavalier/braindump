@@ -1,22 +1,10 @@
 
 import { attempt } from './attempt'
-import { decode } from './decode'
-import { encode } from './encode'
-import { isOk } from './result'
-import { Decoded, codec } from './schema'
+import { codec } from './schema'
 
-export type Json = null | number | string | boolean | readonly Json[] | { readonly [k: string]: Json }
+export type JsonValue = null | number | string | boolean | readonly JsonValue[] | { readonly [k: string]: JsonValue }
 
-export const json = <const S>(s: S) => codec(
-  (x: string) => {
-    const r = jsonParse(x)
-    return isOk(r) ? decode(s)(r.value as any) : r
-  },
-  (x: Decoded<S>) => {
-    const r = encode(s)(x)
-    return isOk(r) ? jsonStringify(r.value as any) : r
-  }
-)
+export const jsonParse = attempt((s: string) => JSON.parse(s) as JsonValue)
+export const jsonStringify = attempt(JSON.stringify as (a: JsonValue) => string)
 
-export const jsonParse = attempt((s: string) => JSON.parse(s) as Json)
-export const jsonStringify = attempt((x: Json) => JSON.stringify(x))
+export const json = codec(jsonParse, jsonStringify)

@@ -33,6 +33,8 @@ const joinSchema = (handleSchema: (s: Schema, x: string) => Ok<string> | Fail, s
         }
         return unexpected(s, original)
       }
+      case 'lazy':
+        return joinSchema(handleSchema, s.f() as TemplateLiteralComponentSchema, group, original)
       case 'transform':
         return handleSchema(s, group)
     }
@@ -63,6 +65,7 @@ const regexForSchema = (s: TemplateLiteralComponentSchema): string => {
       case 'float': return floatRx
       case 'boolean': return '(true|false)'
       case 'template-literal': return buildRegex(s as any)
+      case 'lazy': return regexForSchema(s.f() as any)
       case 'union': return `(${s.schemas.map(s => regexForSchema(s as any)).join('|')})`
       case 'transform': return '(.*)'
     }

@@ -41,6 +41,7 @@ function arbitrary<const S>(s: S, encoded: boolean): fc.Arbitrary<Decoded<S> | E
       case 'template-literal':
         return arbitrary(s.schemas, encoded).map(x => x.join('')) as any
       case 'lift': return arbitrary(s.schema as any, encoded) as any
+      case 'lazy': return s.name === 'JsonValue' ? fc.jsonValue() : arbitrary(s.f() as any, encoded) as any
       case 'pipe': return pipeArbitrary(s, encoded)
       default:
         throw new Error(`Don't know how to generate arbitrary value for ${formatSchema(s)}`)

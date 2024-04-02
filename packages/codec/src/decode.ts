@@ -56,6 +56,8 @@ export const _decode = (s: unknown, x: unknown): Ok<any> | Fail => {
         return s.decode(x)
       case 'lift':
         return _decode(s.schema, x)
+      case 'lazy':
+        return _decode(s.f(), x)
       case 'pipe':
         return s.codecs.reduce((r: Ok<unknown> | Fail, schema) =>
           isOk(r) ? _decode(schema, r.value) : r, ok(x))

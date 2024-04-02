@@ -79,6 +79,7 @@ export type TemplateLiteralComponentSchema =
   | bigint | AnyBigInt
   | boolean | AnyBoolean
   | Transform<string, any>
+  | Lazy<string, any, any>
   | Union<readonly TemplateLiteralComponentSchema[]>
   | TemplateLiteral<unknown>
 
@@ -125,6 +126,15 @@ export interface Pipe<A, B> extends Codec<A, B> {
   readonly [schema]: 'pipe',
   readonly codecs: readonly Codec<any, any>[]
 }
+
+export interface Lazy<A, B, N> extends Codec<A, B> {
+  readonly [schema]: 'lazy',
+  readonly name: N
+  readonly f: () => Schema
+}
+
+export const lazy = <A, B, N>(f: () => Codec<A, B>, name: N): Lazy<A, B, N> =>
+  ({ [schema]: 'lazy', name, f })
 
 export const pipe: {
   <A, B, C>(ab: Codec<A, B>, bz: Codec<B, C>): Pipe<A, C>,
@@ -184,6 +194,7 @@ export type StructuredSchema =
   | Refine<any, any>
   | Transform<any, any>
   | Lift<any, any>
+  | Lazy<any, any, any>
   | Pipe<any, any>
 
 export type AdhocSchema =
@@ -202,6 +213,7 @@ export type AdhocSchema =
 export type Decoded<S> =
   S extends number | bigint | string | boolean | null | undefined ? S
   : S extends Codec<any, infer A> ? A
+  : S extends Lazy<any, infer A, any> ? A
   : S extends readonly Schema[] ? { readonly [K in keyof S]: Decoded<S[K]> }
   : S extends readonly [...infer A extends unknown[], Rest<infer B>] ? readonly [...{ readonly [K in keyof A]: Decoded<A[K]> }, ...readonly Decoded<B>[]]
   : S extends { readonly [s: PropertyKey]: unknown } ? { readonly [K in keyof S]: Decoded<S[K]> }
@@ -213,6 +225,7 @@ export type Decoded<S> =
 export type Encoded<S> =
   S extends number | bigint | string | boolean | null | undefined ? unknown
   : S extends Codec<infer A, any> ? A
+  : S extends Lazy<infer A, any, any> ? A
   : S extends readonly Schema[] ? readonly unknown[]
   : S extends readonly [...readonly Schema[], Rest<Schema>] ? readonly unknown[]
   : S extends { readonly [k: PropertyKey]: Schema | Optional<Schema> } ? { readonly [k: PropertyKey]: Encoded<S[keyof S]> }
