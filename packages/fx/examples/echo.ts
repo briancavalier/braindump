@@ -1,6 +1,6 @@
 import { Interface, createInterface } from 'readline/promises'
 
-import { Effect, Fx, fx, resume, wait, resumeWith, handle3, pure, runAsync } from '../src'
+import { Effect, Fx, fx, resume, wait, resumeWith, handle, pure, runAsync } from '../src'
 
 class Print extends Effect('Print')<string> { }
 
@@ -18,33 +18,33 @@ const main = fx(function* () {
   }
 })
 
-const handlePrint = <const E, const A>(f: Fx<E, A>) => handle3(f, Print, {
+const handlePrint = <const E, const A>(f: Fx<E, A>) => handle(f, Print, {
   handle: print => pure(resume(console.log(print.arg))),
 })
 
-const handleRead = <const E, const A>(r: Interface, f: Fx<E, A>) => handle3(f, Read, {
+const handleRead = <const E, const A>(r: Interface, f: Fx<E, A>) => handle(f, Read, {
   handle: read => fx(function* () {
     const s = yield* wait(r.question(read.arg))
     return resume(s)
   })
 })
 
-const handlePrint3 = <const E, const A>(f: Fx<E, A>) => handle3(f, Print, {
+const handlePrintPure = <const E, const A>(f: Fx<E, A>) => handle(f, Print, {
   initially: () => [] as readonly string[],
   handle: (e, s) => pure(resumeWith(undefined, [...s, e.arg])),
   return: (_, s) => s
 })
 
-const handleRead3 = <const E, const A>(reads: readonly string[], f: Fx<E, A>) => handle3(f, Read, {
+const handleReadPure = <const E, const A>(reads: readonly string[], f: Fx<E, A>) => handle(f, Read, {
   initially: () => reads,
   handle: (_, [s, ...ss]) => pure(resumeWith(s, ss))
 })
 
 // Run with "real" Read and Print effects
 const r = createInterface({ input: process.stdin, output: process.stdout })
-const m1 = handleRead(r, handlePrint(main))
+const m = handleRead(r, handlePrint(main))
 
 // Run with pure Read and Print effects that only collect input and output
-// const m1 = handlePrint3(handleRead3(['a', 'b', 'c'], main))
+// const m = handlePrintPure(handleReadPure(['a', 'b', 'c'], main))
 
-runAsync(m1).then(console.log)
+runAsync(m).then(console.log)
