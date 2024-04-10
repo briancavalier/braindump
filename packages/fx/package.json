@@ -1,0 +1,21 @@
+{
+  "name": "@braindump/fx",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist/*.js",
+    "dist/*.d.ts",
+    "dist/*.map"
+  ],
+  "scripts": {
+    "build": "tsc --build",
+    "lint": "eslint *.ts --fix",
+    "test": "node -r esbuild-register --test ./src/*.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT"
+}
