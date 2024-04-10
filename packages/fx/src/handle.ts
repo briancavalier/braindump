@@ -8,21 +8,39 @@ export const resume = <const A>(a: A): Step<A, never, void> => ({ done: false, v
 export const resumeWith = <const A, const S>(a: A, s: S): Step<A, never, S> => ({ done: false, value: a, state: s })
 export const done = <const A>(a: A): Step<never, A, never> => ({ done: true, value: a })
 
-export function handle<const E1, const R1, const E extends EffectType, const S, const A, const E2, const R2, const R>(
+export function handle<const E1, const R1, const E extends EffectType, const SE, const FE, const S, const A, const E2, const R2, const R>(
   f: Fx<E1, R1>,
   match: E,
   h: {
-    initially: () => S,
+    initially: Fx<SE, S>,
     handle: (e: InstanceType<E>, s: S) => Fx<E2, Step<A, R2, S>>
     return: (r: R1 | R2, s: S) => R
-  }): Fx<Exclude<E1, InstanceType<E>> | E2, R>
-export function handle<const E1, const R1, const E extends EffectType, const S, const A, const E2, const R2>(
+    finally: (s: S) => Fx<FE, void>
+  }): Fx<SE | Exclude<E1, InstanceType<E>> | E2 | FE, R>
+export function handle<const E1, const R1, const E extends EffectType, const FE, const A, const E2, const R2, const R>(
   f: Fx<E1, R1>,
   match: E,
   h: {
-    initially: () => S,
+    handle: (e: InstanceType<E>) => Fx<E2, Step<A, R2, void>>
+    return: (r: R1 | R2) => R
+    finally: () => Fx<FE, void>
+  }): Fx<Exclude<E1, InstanceType<E>> | E2 | FE, R>
+export function handle<const E1, const R1, const E extends EffectType, const SE, const FE, const S, const A, const E2, const R2>(
+  f: Fx<E1, R1>,
+  match: E,
+  h: {
+    initially: Fx<SE, S>,
     handle: (e: InstanceType<E>, s: S) => Fx<E2, Step<A, R2, S>>
-  }): Fx<Exclude<E1, InstanceType<E>> | E2, R1 | R2>
+    finally: (s: S) => Fx<FE, void>
+  }): Fx<SE | Exclude<E1, InstanceType<E>> | E2 | FE, R1 | R2>
+export function handle<const E1, const R1, const E extends EffectType, const SE, const S, const A, const E2, const R2, const R>(
+  f: Fx<E1, R1>,
+  match: E,
+  h: {
+    initially: Fx<SE, S>,
+    handle: (e: InstanceType<E>, s: S) => Fx<E2, Step<A, R2, S>>
+    return: (r: R1 | R2, s: S) => R
+  }): Fx<SE | Exclude<E1, InstanceType<E>> | E2, R>
 export function handle<const E1, const R1, const E extends EffectType, const A, const E2, const R2, const R>(
   f: Fx<E1, R1>,
   match: E,
@@ -30,28 +48,44 @@ export function handle<const E1, const R1, const E extends EffectType, const A, 
     handle: (e: InstanceType<E>) => Fx<E2, Step<A, R2, void>>
     return: (r: R1 | R2) => R
   }): Fx<Exclude<E1, InstanceType<E>> | E2, R>
+export function handle<const E1, const R1, const SE, const E extends EffectType, const S, const A, const E2, const R2>(
+  f: Fx<E1, R1>,
+  match: E,
+  h: {
+    initially: Fx<SE, S>,
+    handle: (e: InstanceType<E>, s: S) => Fx<E2, Step<A, R2, S>>
+  }): Fx<SE | Exclude<E1, InstanceType<E>> | E2, R1 | R2>
+export function handle<const E1, const R1, const E extends EffectType, const FE, const A, const E2, const R2>(
+  f: Fx<E1, R1>,
+  match: E,
+  h: {
+    handle: (e: InstanceType<E>) => Fx<E2, Step<A, R2, void>>
+    finally: () => Fx<FE, void>
+  }): Fx<Exclude<E1, InstanceType<E>> | E2 | FE, R1 | R2>
 export function handle<const E1, const R1, const E extends EffectType, const A, const E2, const R2>(
   f: Fx<E1, R1>,
   match: E,
   h: {
     handle: (e: InstanceType<E>) => Fx<E2, Step<A, R2, void>>
   }): Fx<Exclude<E1, InstanceType<E>> | E2, R1 | R2>
-export function* handle<const E1, const R1, const E extends EffectType, const S, const A, const E2, const R2, const R>(
+export function* handle<const E1, const R1, const E extends EffectType, const SE, const FE, const S, const A, const E2, const R2, const R>(
   f: Fx<E1, R1>,
   match: E,
   h: {
-    initially?: () => S,
+    initially?: Fx<SE, S>,
     handle: (e: InstanceType<E>, s: S) => Fx<E2, Step<A, R2, S>>
     return?: (r: R1 | R2, s: S) => R
-  }): Fx<Exclude<E1, InstanceType<E>> | E2, R1 | R2 | R> {
+    finally?: (s: S) => Fx<FE, void>
+  }): Fx<SE | Exclude<E1, InstanceType<E>> | E2 | FE, R1 | R2 | R> {
     const i = f[Symbol.iterator]()
+    let s
     try {
-      let s = h.initially ? h.initially() : undefined
+      s = h.initially ? (yield* h.initially) : undefined
       let ir = i.next()
 
       while (!ir.done) {
         if (isEffect(match, ir.value)) {
-          const hr = yield* h.handle(ir.value, s as never)
+          const hr: Step<A, R1 | R2, S> = yield* h.handle(ir.value, s as never)
           if (hr.done) return h.return ? h.return(hr.value, s as never) : hr.value
           else {
             s = hr.state
@@ -64,5 +98,6 @@ export function* handle<const E1, const R1, const E extends EffectType, const S,
       return h.return ? h.return(ir.value, s as never) : ir.value
     } finally {
       if (i.return) i.return()
+      if(h.finally) yield* h.finally(s as never)
     }
   }

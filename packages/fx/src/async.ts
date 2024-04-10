@@ -1,4 +1,4 @@
-import { Effect, Fx, Result } from './fx'
+import { Effect, Fx } from './fx'
 
 export class Async extends Effect('Wait')<(f: (x: any) => void) => Disposable> { }
 
@@ -11,4 +11,4 @@ export const wait = <const A>(p: Promise<A>): Fx<Async, A> => async<A>(f => {
 
 export class Concurrent extends Effect('Concurrent')<Fx<unknown, unknown>> { }
 
-export const fork = <const F extends Fx<Async | Concurrent, unknown>>(f: F) => new Concurrent(f).request<Promise<Result<F>>>()
+export const fork = <const E extends Async | Concurrent, const A>(f: Fx<E, A>) => new Concurrent(f).request<Promise<A>>()

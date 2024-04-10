@@ -26,11 +26,6 @@ export type Fx<Effects, A> = {
   [Symbol.iterator](): Iterator<Effects, A, unknown>
 }
 
-export type AnyFx = Fx<unknown, unknown>
-
-export type Effects<F> = F extends Fx<infer Effects, unknown> ? Effects : never
-export type Result<F> = F extends Fx<unknown, infer A> ? A : never
-
 export const fx = <const Effects, const A>(f: () => Generator<Effects, A>) => ({
   [Symbol.iterator]: f
 }) as Fx<Effects, A>
