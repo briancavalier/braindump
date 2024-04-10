@@ -1,6 +1,6 @@
 import { createInterface } from 'readline/promises'
 
-import { Effect, Fx, fx, resume, wait, resumeWith, handle, pure, runAsync, sync } from '../src'
+import { Effect, Fx, fx, resume, wait, resumeWith, handle, pure, run, sync } from '../src'
 
 class Print extends Effect('Print')<string> { }
 
@@ -48,4 +48,4 @@ const m = handleRead(handlePrint(main))
 // Run with pure Read and Print effects that only collect input and output
 // const m = handlePrintPure(handleReadPure(['a', 'b', 'c'], main))
 
-runAsync(m).then(console.log)
+run(m).then(console.log)
