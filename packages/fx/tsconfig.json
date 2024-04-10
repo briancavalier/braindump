@@ -6,7 +6,5 @@
   },
   "include": [
     "src",
-    "old/test2.ts",
-    "old/test4.ts"
   ]
 }
