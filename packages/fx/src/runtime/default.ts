@@ -7,7 +7,7 @@ export const run = <const R>(f: Fx<Async | Concurrent, R>): Promise<R> => getRes
 const getResult = <const R>(f: Fx<never, R>): R => f[Symbol.iterator]().next().value
 
 export const handleConcurrent = <const E, const A>(f: Fx<E, A>) => handle(f, Concurrent, {
-  handle: c => pure(resume(spawnAsync(c.arg as any))),
+  handle: c => pure(resume(spawnAsync(c as any))),
   return: a => Promise.resolve(a)
 })
 

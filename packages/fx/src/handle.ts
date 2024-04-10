@@ -23,7 +23,7 @@ export function handle<const E1, const R1, const E extends EffectType, const FE,
   f: Fx<E1, R1>,
   match: E,
   h: {
-    handle: (e: InstanceType<E>) => Fx<E2, Step<A, R2, void>>
+    handle: (e: InstanceType<E>["arg"]) => Fx<E2, Step<A, R2, void>>
     return: (r: R1 | R2) => R
     finally: () => Fx<FE, void>
   }): Fx<Exclude<E1, InstanceType<E>> | E2 | FE, R>
@@ -32,7 +32,7 @@ export function handle<const E1, const R1, const E extends EffectType, const SE,
   match: E,
   h: {
     initially: Fx<SE, S>,
-    handle: (e: InstanceType<E>, s: S) => Fx<E2, Step<A, R2, S>>
+    handle: (e: InstanceType<E>["arg"], s: S) => Fx<E2, Step<A, R2, S>>
     finally: (s: S) => Fx<FE, void>
   }): Fx<SE | Exclude<E1, InstanceType<E>> | E2 | FE, R1 | R2>
 export function handle<const E1, const R1, const E extends EffectType, const SE, const S, const A, const E2, const R2, const R>(
@@ -40,14 +40,14 @@ export function handle<const E1, const R1, const E extends EffectType, const SE,
   match: E,
   h: {
     initially: Fx<SE, S>,
-    handle: (e: InstanceType<E>, s: S) => Fx<E2, Step<A, R2, S>>
+    handle: (e: InstanceType<E>["arg"], s: S) => Fx<E2, Step<A, R2, S>>
     return: (r: R1 | R2, s: S) => R
   }): Fx<SE | Exclude<E1, InstanceType<E>> | E2, R>
 export function handle<const E1, const R1, const E extends EffectType, const A, const E2, const R2, const R>(
   f: Fx<E1, R1>,
   match: E,
   h: {
-    handle: (e: InstanceType<E>) => Fx<E2, Step<A, R2, void>>
+    handle: (e: InstanceType<E>["arg"]) => Fx<E2, Step<A, R2, void>>
     return: (r: R1 | R2) => R
   }): Fx<Exclude<E1, InstanceType<E>> | E2, R>
 export function handle<const E1, const R1, const SE, const E extends EffectType, const S, const A, const E2, const R2>(
@@ -55,27 +55,27 @@ export function handle<const E1, const R1, const SE, const E extends EffectType,
   match: E,
   h: {
     initially: Fx<SE, S>,
-    handle: (e: InstanceType<E>, s: S) => Fx<E2, Step<A, R2, S>>
+    handle: (e: InstanceType<E>["arg"], s: S) => Fx<E2, Step<A, R2, S>>
   }): Fx<SE | Exclude<E1, InstanceType<E>> | E2, R1 | R2>
 export function handle<const E1, const R1, const E extends EffectType, const FE, const A, const E2, const R2>(
   f: Fx<E1, R1>,
   match: E,
   h: {
-    handle: (e: InstanceType<E>) => Fx<E2, Step<A, R2, void>>
+    handle: (e: InstanceType<E>["arg"]) => Fx<E2, Step<A, R2, void>>
     finally: () => Fx<FE, void>
   }): Fx<Exclude<E1, InstanceType<E>> | E2 | FE, R1 | R2>
 export function handle<const E1, const R1, const E extends EffectType, const A, const E2, const R2>(
   f: Fx<E1, R1>,
   match: E,
   h: {
-    handle: (e: InstanceType<E>) => Fx<E2, Step<A, R2, void>>
+    handle: (e: InstanceType<E>["arg"]) => Fx<E2, Step<A, R2, void>>
   }): Fx<Exclude<E1, InstanceType<E>> | E2, R1 | R2>
 export function* handle<const E1, const R1, const E extends EffectType, const SE, const FE, const S, const A, const E2, const R2, const R>(
   f: Fx<E1, R1>,
   match: E,
   h: {
     initially?: Fx<SE, S>,
-    handle: (e: InstanceType<E>, s: S) => Fx<E2, Step<A, R2, S>>
+    handle: (e: InstanceType<E>["arg"], s: S) => Fx<E2, Step<A, R2, S>>
     return?: (r: R1 | R2, s: S) => R
     finally?: (s: S) => Fx<FE, void>
   }): Fx<SE | Exclude<E1, InstanceType<E>> | E2 | FE, R1 | R2 | R> {
@@ -87,7 +87,7 @@ export function* handle<const E1, const R1, const E extends EffectType, const SE
 
       while (!ir.done) {
         if (isEffect(match, ir.value)) {
-          const hr: Step<A, R1 | R2, S> = yield* h.handle(ir.value, s as never)
+          const hr: Step<A, R1 | R2, S> = yield* h.handle(ir.value.arg, s as never)
           switch (hr.tag) {
             case 'return':
               return h.return ? h.return(hr.value, s as never) : hr.value

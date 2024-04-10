@@ -19,13 +19,13 @@ const main = fx(function* () {
 })
 
 const handlePrint = <const E, const A>(f: Fx<E, A>) => handle(f, Print, {
-  handle: print => pure(resume(console.log(print.arg))),
+  handle: msg => pure(resume(console.log(msg))),
 })
 
 const handleRead = <const E, const A>(f: Fx<E, A>) => handle(f, Read, {
   initially: sync(() => createInterface({ input: process.stdin, output: process.stdout })),
-  handle: (read, readline) => fx(function* () {
-    const s = yield* wait(readline.question(read.arg))
+  handle: (prompt, readline) => fx(function* () {
+    const s = yield* wait(readline.question(prompt))
     return resumeWith(s, readline)
   }),
   finally: readline => pure(readline.close())
@@ -33,7 +33,7 @@ const handleRead = <const E, const A>(f: Fx<E, A>) => handle(f, Read, {
 
 const handlePrintPure = <const E, const A>(f: Fx<E, A>) => handle(f, Print, {
   initially: pure([] as readonly string[]),
-  handle: (e, s) => pure(resumeWith(undefined, [...s, e.arg])),
+  handle: (msg, s) => pure(resumeWith(undefined, [...s, msg])),
   return: (_, s) => s
 })
 
