@@ -2,11 +2,11 @@ import { Async, Concurrent, fork } from '../async'
 import { Fx, pure, isEffect } from '../fx'
 import { handle, resume } from '../handle'
 
-export const run = <const R>(f: Fx<Async | Concurrent, R>): Promise<R> => getResult(handleFork(fork(f)))
+export const run = <const R>(f: Fx<Async | Concurrent, R>): Promise<R> => getResult(handleConcurrent(fork(f)))
 
 const getResult = <const R>(f: Fx<never, R>): R => f[Symbol.iterator]().next().value
 
-export const handleFork = <const E, const A>(f: Fx<E, A>) => handle(f, Concurrent, {
+export const handleConcurrent = <const E, const A>(f: Fx<E, A>) => handle(f, Concurrent, {
   handle: c => pure(resume(spawnAsync(c.arg as any))),
   return: a => Promise.resolve(a)
 })
