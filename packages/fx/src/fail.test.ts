@@ -2,13 +2,13 @@ import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 
 import { catchIf, fail } from './fail'
-import { fx, pure } from './fx'
+import { fx, of } from './fx'
 import { run } from './runtime/test'
 
 describe('catchIf', () => {
   it('given no failures, returns result', () => {
     const expected = Math.random()
-    const f = pure(expected)
+    const f = of(expected)
 
     const actual = run(catchIf((x): x is unknown => true, f))
     assert.equal(actual, expected)

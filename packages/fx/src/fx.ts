@@ -31,7 +31,7 @@ export const fx = <const Effects, const A>(f: () => Generator<Effects, A>) => ({
 }) as Fx<Effects, A>
 
 // eslint-disable-next-line require-yield
-export const sync = <const A>(f: () => A) => fx(function* () { return f() })
+export const of = <const A>(a: A) => fx(function* () { return a })
 
 // eslint-disable-next-line require-yield
-export const pure = <const A>(a: A) => fx(function* () { return a })
+export const sync = <const A>(f: () => A) => fx(function* () { return f() })
