@@ -20,26 +20,28 @@ type Keys<M extends Record<PropertyKey, unknown>> = {
 
 type Values<E> = E extends State<infer K> ? K extends Key<PropertyKey, infer A> ? A : never : never
 
-const handleState = <const E, const A, M extends Record<PropertyKey, unknown>>(m: M, f: Fx<E, A>) =>
+const handleState = <const E, const A, S extends Record<PropertyKey, unknown>, const R>(s: S, r: (a: A, s: S) => R, f: Fx<E, A>) =>
   handle(f, State, {
-    initially: pure(m),
-    handle: (s, m) => {
-      if(s.tag === 'get') {
-        if (s.key as keyof typeof m in m) return pure(resumeWith(m[s.key as keyof typeof m] as Values<E>, m))
-        else return pure(unhandled)
-      } else {
-        return pure(resumeWith(undefined, { ...m as any, [s.key as keyof typeof m]: s.value }))
-      }
-    }
-  }) as Fx<Exclude<E, Keys<M>>, Values<E>>
+    initially: pure(s),
+    handle: (gs, s) => {
+      if(gs.tag === 'get')
+        return (gs.key as keyof typeof s in s)
+          ? pure(resumeWith(s[gs.key as keyof typeof s] as Values<E>, s))
+          : pure(unhandled)
+      else
+        return pure(resumeWith(undefined, { ...s as any, [gs.key as keyof typeof s]: gs.value }))
+    },
+    return: r
+  }) as Fx<Exclude<E, Keys<S>>, R>
 
-const ref = <const K extends PropertyKey, A>(key: K, value: A) => fx(function*() {
-  yield* set(key as Key<K, A>, value)
-  return key as Key<K, A>
-})
+const withState = <const E, const A, S extends Record<PropertyKey, unknown>>(s: S, f: Fx<E, A>) => handleState(s, (a, s) => [a, s] as const, f)
+const runState = <const E, const A, S extends Record<PropertyKey, unknown>>(s: S, f: Fx<E, A>) => handleState(s, a => a, f)
+const getState = <const E, const A, S extends Record<PropertyKey, unknown>>(s: S, f: Fx<E, A>) => handleState(s, (_, s) => s, f)
+
+const key = <A>() => <const K extends PropertyKey>(key: K) => key as Key<K, A>
 
 const main = fx(function* () {
-  const k = yield* ref('k', 0)
+  const k = key<number>()('k')
   const x0 = yield* get(k)
   yield* set(k, x0 + 1)
   const x1 = yield* get(k)
@@ -48,7 +50,7 @@ const main = fx(function* () {
   return [x0, x1, x2]
 })
 
-const m1 = handleState({ x: 1 }, main)
-const m2 = handleState({ k: 2 }, m1)
+const m1 = runState({ x: 1 }, main)
+const m2 = runState({ k: 2 }, m1)
 
 run(m2).then(console.log)
