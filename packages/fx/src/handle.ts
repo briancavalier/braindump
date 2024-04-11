@@ -1,14 +1,12 @@
 import { EffectType, Fx, isEffect } from './fx'
 
-export type Step<A, R, S> = Resume<A, S> | Return<R> | Unhandled
+export type Step<A, R, S> = Resume<A, S> | Return<R>
 export type Resume<A, S> = { tag: 'resume', value: A, state: S }
 export type Return<A> = { tag: 'return', value: A }
-export type Unhandled = { tag: 'unhandled' }
 
 export const resume = <const A>(a: A): Step<A, never, void> => ({ tag: 'resume', value: a, state: undefined })
 export const resumeWith = <const A, const S>(a: A, s: S): Step<A, never, S> => ({ tag: 'resume', value: a, state: s })
 export const done = <const A>(a: A): Step<never, A, never> => ({ tag: 'return', value: a })
-export const unhandled = { tag: 'unhandled' } as Step<never, never, never>
 
 export function handle<const E1, const R1, const E extends EffectType, const SE, const FE, const S, const A, const E2, const R2, const R>(
   f: Fx<E1, R1>,
@@ -95,9 +93,6 @@ export function* handle<const E1, const R1, const E extends EffectType, const SE
               s = hr.state
               ir = i.next(hr.value)
               break
-            case 'unhandled':
-              ir = i.next(yield ir.value as any)
-              break;
           }
         }
         else ir = i.next(yield ir.value as any)
