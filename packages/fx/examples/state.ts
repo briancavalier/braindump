@@ -1,4 +1,4 @@
-import { Effect, Fx, fx, handle, pure, resumeWith } from '../src'
+import { Effect, Fx, fx, handle, pure, resumeWith, unhandled } from '../src'
 import { run } from '../src/runtime/default'
 
 type Key<K extends PropertyKey, A> = K & { readonly value: A }
@@ -23,10 +23,14 @@ type Values<E> = E extends State<infer K> ? K extends Key<PropertyKey, infer A> 
 const handleState = <const E, const A, M extends Record<PropertyKey, unknown>>(m: M, f: Fx<E, A>) =>
   handle(f, State, {
     initially: pure(m),
-    handle: (s, m) => pure(
-      s.tag === 'get' ? resumeWith(m[s.key as keyof typeof m] as A, m)
-      : resumeWith(undefined, { ...m as any, [s.key as keyof typeof m]: s.value })
-    )
+    handle: (s, m) => {
+      if(s.tag === 'get') {
+        if (s.key as keyof typeof m in m) return pure(resumeWith(m[s.key as keyof typeof m] as Values<E>, m))
+        else return pure(unhandled)
+      } else {
+        return pure(resumeWith(undefined, { ...m as any, [s.key as keyof typeof m]: s.value }))
+      }
+    }
   }) as Fx<Exclude<E, Keys<M>>, Values<E>>
 
 const ref = <const K extends PropertyKey, A>(key: K, value: A) => fx(function*() {
@@ -44,6 +48,7 @@ const main = fx(function* () {
   return [x0, x1, x2]
 })
 
-const m = handleState({ k: 1 }, main)
+const m1 = handleState({ x: 1 }, main)
+const m2 = handleState({ k: 2 }, m1)
 
-run(m).then(console.log)
+run(m2).then(console.log)
