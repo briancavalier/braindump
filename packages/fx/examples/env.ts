@@ -12,7 +12,7 @@ type ExcludeEnv<E, S extends Record<PropertyKey, unknown>> = E extends Env<infer
     : Env<{ readonly [K in keyof A as S[K] extends A[K] ? never : K]: A[K] }>
   : E
 
-const handleEnv = <const E, const A, S extends Record<PropertyKey, unknown>>(s: S, root: boolean, f: Fx<E, A>) =>
+const handleEnv = <const E, const A, const S extends Record<PropertyKey, unknown>>(s: S, root: boolean, f: Fx<E, A>) =>
   handle(f, { Env }, {
     initially: of(s),
     handle: (_, s) => fx(function* () {
@@ -21,7 +21,10 @@ const handleEnv = <const E, const A, S extends Record<PropertyKey, unknown>>(s: 
   }) as Fx<ExcludeEnv<E, S>, A>
 
 const main = fx(function* () {
-  const { x, y } = yield* env<{ x: number, y: string }>()
+  // These should be equivalent
+  // const { x, y } = yield* env<{ x: number, y: string }>()
+  const { x } = yield* env<{ x: number }>()
+  const { y } = yield* env<{ y: string }>()
   console.log(x, y)
 })
 
