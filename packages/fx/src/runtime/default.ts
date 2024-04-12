@@ -1,8 +1,9 @@
 import { Async, Concurrent, fork } from '../async'
+import { isolateEnv } from '../env'
 import { Fx, of, isEffect } from '../fx'
 import { handle } from '../handle'
 
-export const run = <const R>(f: Fx<Async | Concurrent, R>): Promise<R> => getResult(handleConcurrent(fork(f)))
+export const run = <const R>(f: Fx<Async | Concurrent, R>): Promise<R> => getResult(handleConcurrent(fork(isolateEnv({}, f))))
 
 const getResult = <const R>(f: Fx<never, R>): R => f[Symbol.iterator]().next().value
 

@@ -1,34 +1,43 @@
-import { Effect, Fx, fx, of, handle } from '../src'
+import { fx } from '../src'
+import { env, isolateEnv, withEnv } from '../src/env'
 import { run } from '../src/runtime/default'
 
-class Env<E extends Record<PropertyKey, unknown>> extends Effect('Env')<E> { }
+// --------------------------------------------------
 
-const env = <E extends Record<PropertyKey, unknown>>() =>
-  new Env<E>(undefined as never).request<E>()
-
-type ExcludeEnv<E, S extends Record<PropertyKey, unknown>> = E extends Env<infer A extends Record<PropertyKey, unknown>>
-  ? S extends A
-    ? never
-    : Env<{ readonly [K in keyof A as S[K] extends A[K] ? never : K]: A[K] }>
-  : E
-
-const handleEnv = <const E, const A, const S extends Record<PropertyKey, unknown>>(s: S, root: boolean, f: Fx<E, A>) =>
-  handle(f, { Env }, {
-    initially: of(s),
-    handle: (_, s) => fx(function* () {
-      return root ? [s, s] : [{ ...(yield* env<Record<string, unknown>>()), ...s }, s]
-    })
-  }) as Fx<ExcludeEnv<E, S>, A>
-
-const main = fx(function* () {
-  // These should be equivalent
-  // const { x, y } = yield* env<{ x: number, y: string }>()
+// Can request separately
+const main1 = fx(function* () {
   const { x } = yield* env<{ x: number }>()
   const { y } = yield* env<{ y: string }>()
   console.log(x, y)
 })
 
-const m1 = handleEnv({ x: 1 }, false, main)
-const m2 = handleEnv({ y: 'hello' }, true, m1)
+run(
+  withEnv({ y: 'hello' }, withEnv({ x: 1 }, main1))
+).then(console.log)
 
-run(m2).then(console.log)
+// --------------------------------------------------
+
+// Or all at once
+const main2 = fx(function* () {
+  const { x, y } = yield* env<{ x: number, y: string }>()
+  console.log(x, y)
+})
+
+run(
+  withEnv({ y: 'hello' }, withEnv({ x: 1 }, main2))
+).then(console.log)
+
+// --------------------------------------------------
+
+// isolateEnv enforces all remaining requirements
+// must be meet
+const main3 = fx(function* () {
+  const { x, y } = yield* env<{ x: number, y: string }>()
+  console.log(x, y)
+})
+
+run(
+  // Not supplying the complete remaining
+  // environment here will be a type error
+  isolateEnv({ x: 1, y: 'hello' }, main3)
+).then(console.log)
