@@ -105,7 +105,6 @@ export function* control<const E1, const R1, const E extends Record<string, Effe
     }
   }
 
-
 export function handle<const E1, const R1, const E extends Record<string, EffectType>, const SE, const FE, const S, const A, const E2, const R>(
   f: Fx<E1, R1>,
   match: E,
