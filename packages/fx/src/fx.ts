@@ -9,7 +9,7 @@ export interface AnyEffect {
 }
 
 export const Effect = <const T>(type: T) =>
-  class <A> {
+  class <A> implements AnyEffect {
     public readonly type = type
     public static readonly type = type
     constructor(public readonly arg: A) { }
@@ -17,7 +17,7 @@ export const Effect = <const T>(type: T) =>
     *[Symbol.iterator](): Iterator<this, unknown, never> {
       return yield this
     }
-  }
+  } satisfies EffectType
 
 export const isEffect = <const Effect extends EffectType>(e: Effect, x: unknown): x is InstanceType<Effect> =>
   !!x && typeof x === 'object' && (x as any).type === e.type

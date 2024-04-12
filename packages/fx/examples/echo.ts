@@ -1,6 +1,6 @@
 import { createInterface } from 'readline/promises'
 
-import { Effect, Fx, fx, resume, wait, resumeWith, handle, of, run, sync } from '../src'
+import { Effect, Fx, fx, wait, of, run, sync, handle } from '../src'
 
 class Print extends Effect('Print')<string> { }
 
@@ -18,28 +18,28 @@ const main = fx(function* () {
   }
 })
 
-const handlePrint = <const E, const A>(f: Fx<E, A>) => handle(f, Print, {
-  handle: msg => of(resume(console.log(msg))),
+const handlePrint = <const E, const A>(f: Fx<E, A>) => handle(f, {Print}, {
+  handle: print => of(console.log(print.arg)),
 })
 
-const handleRead = <const E, const A>(f: Fx<E, A>) => handle(f, Read, {
+const handleRead = <const E, const A>(f: Fx<E, A>) => handle(f, {Read}, {
   initially: sync(() => createInterface({ input: process.stdin, output: process.stdout })),
-  handle: (prompt, readline) => fx(function* () {
-    const s = yield* wait(readline.question(prompt))
-    return resumeWith(s, readline)
+  handle: (read, readline) => fx(function* () {
+    const s = yield* wait(readline.question(read.arg))
+    return [s, readline]
   }),
   finally: readline => of(readline.close())
 })
 
-const handlePrintPure = <const E, const A>(f: Fx<E, A>) => handle(f, Print, {
+const handlePrintPure = <const E, const A>(f: Fx<E, A>) => handle(f, {Print}, {
   initially: of([] as readonly string[]),
-  handle: (msg, s) => of(resumeWith(undefined, [...s, msg])),
+  handle: (print, s) => of([undefined, [...s, print.arg]]),
   return: (_, s) => s
 })
 
-const handleReadPure = <const E, const A>(reads: readonly string[], f: Fx<E, A>) => handle(f, Read, {
+const handleReadPure = <const E, const A>(reads: readonly string[], f: Fx<E, A>) => handle(f, {Read}, {
   initially: of(reads),
-  handle: (_, [s, ...ss]) => of(resumeWith(s, ss))
+  handle: (_, [s, ...ss]) => of([s, ss])
 })
 
 // Run with "real" Read and Print effects
