@@ -1,34 +1,55 @@
-import { Effect, Fx, fx, of, handle } from '../src'
+import { fx } from '../src'
+import { get, provideAll, provide } from '../src/env'
 import { run } from '../src/runtime/default'
 
-class Env<E extends Record<PropertyKey, unknown>> extends Effect('Env')<E> { }
+// --------------------------------------------------
 
-const env = <E extends Record<PropertyKey, unknown>>() =>
-  new Env<E>(undefined as never).request<E>()
-
-type ExcludeEnv<E, S extends Record<PropertyKey, unknown>> = E extends Env<infer A extends Record<PropertyKey, unknown>>
-  ? S extends A
-    ? never
-    : Env<{ readonly [K in keyof A as S[K] extends A[K] ? never : K]: A[K] }>
-  : E
-
-const handleEnv = <const E, const A, const S extends Record<PropertyKey, unknown>>(s: S, root: boolean, f: Fx<E, A>) =>
-  handle(f, { Env }, {
-    initially: of(s),
-    handle: (_, s) => fx(function* () {
-      return root ? [s, s] : [{ ...(yield* env<Record<string, unknown>>()), ...s }, s]
-    })
-  }) as Fx<ExcludeEnv<E, S>, A>
-
-const main = fx(function* () {
-  // These should be equivalent
-  // const { x, y } = yield* env<{ x: number, y: string }>()
-  const { x } = yield* env<{ x: number }>()
-  const { y } = yield* env<{ y: string }>()
+// Can request separately
+const main1 = fx(function* () {
+  const { x } = yield* get<{ x: number }>()
+  const { y } = yield* get<{ y: string }>()
   console.log(x, y)
 })
 
-const m1 = handleEnv({ x: 1 }, false, main)
-const m2 = handleEnv({ y: 'hello' }, true, m1)
+// @ts-expect-error missing y
+provideAll({}, provide({ x: 1 }, main1))
 
-run(m2).then(console.log)
+// @ts-expect-error wrong type for y
+provideAll({}, provide({ x: 1, y: 123 }, main1))
+
+run(
+  provide({ y: 'hello' }, provide({ x: 1 }, main1))
+).then(r => console.log('main1', r))
+
+// --------------------------------------------------
+
+// Or all at once
+const main2 = fx(function* () {
+  const { x, y } = yield* get<{ x: number, y: string }>()
+  console.log(x, y)
+})
+
+// @ts-expect-error missing y
+provideAll({}, provide({ x: 1 }, main2))
+
+run(
+  provide({ y: 'hello' }, provide({ x: 1 }, main2))
+).then(r => console.log('main2', r))
+
+// --------------------------------------------------
+
+// isolateEnv enforces all remaining requirements
+// must be meet
+const main3 = fx(function* () {
+  const { x, y } = yield* get<{ x: number, y: string }>()
+  console.log(x, y)
+})
+
+// @ts-expect-error missing y
+provideAll({ x: 1 }, main3)
+
+run(
+  // Not supplying the complete remaining
+  // environment here will be a type error
+  provideAll({ x: 1, y: 'hello' }, main3)
+).then(r => console.log('main3', r))
