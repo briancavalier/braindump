@@ -11,4 +11,4 @@ export const wait = <const A>(p: Promise<A>): Fx<Async, A> => async<A>(f => {
 
 export class Concurrent extends Effect('Concurrent')<Fx<unknown, unknown>> { }
 
-export const fork = <const E extends Async | Concurrent, const A>(f: Fx<E, A>) => new Concurrent(f).request<Promise<A>>()
+export const fork = <const E, const A>(f: Fx<E, A>) => new Concurrent(f) as Fx<Exclude<E, Async> | Concurrent, Promise<A>>

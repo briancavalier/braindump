@@ -1,3 +1,4 @@
+import { popContext, pushContext } from './context'
 import { EffectType, Fx } from './fx'
 
 export type Step<A, R, S> = Resume<A, S> | Return<R>
@@ -175,7 +176,9 @@ export function* handle<const E1, const R1, const E extends Record<string, Effec
     finally?: (s: S) => Fx<FE, void>
   }): Fx<SE | Exclude<E1, InstanceType<E[keyof E]>> | E2 | FE, R1 | R> {
   const i = f[Symbol.iterator]()
+  pushContext({ effects: match, handler: h })
   let s
+
   try {
     s = h.initially ? (yield* h.initially) : undefined
     let ir = i.next()
@@ -197,7 +200,9 @@ export function* handle<const E1, const R1, const E extends Record<string, Effec
   } finally {
     if (i.return) i.return()
     if (h.finally) yield* h.finally(s as never)
+    popContext()
   }
 }
+
 const matches2 = <const T extends Record<string, EffectType>, const E>(t: T, e: E): e is Extract<InstanceType<T[keyof T]> , E>=>
   (e as any).type as PropertyKey in t
