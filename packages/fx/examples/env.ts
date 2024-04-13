@@ -1,43 +1,55 @@
 import { fx } from '../src'
-import { env, isolateEnv, withEnv } from '../src/env'
+import { get, provideAll, provide } from '../src/env'
 import { run } from '../src/runtime/default'
 
 // --------------------------------------------------
 
 // Can request separately
 const main1 = fx(function* () {
-  const { x } = yield* env<{ x: number }>()
-  const { y } = yield* env<{ y: string }>()
+  const { x } = yield* get<{ x: number }>()
+  const { y } = yield* get<{ y: string }>()
   console.log(x, y)
 })
 
+// @ts-expect-error missing y
+provideAll({}, provide({ x: 1 }, main1))
+
+// @ts-expect-error wrong type for y
+provideAll({}, provide({ x: 1, y: 123 }, main1))
+
 run(
-  withEnv({ y: 'hello' }, withEnv({ x: 1 }, main1))
-).then(console.log)
+  provide({ y: 'hello' }, provide({ x: 1 }, main1))
+).then(r => console.log('main1', r))
 
 // --------------------------------------------------
 
 // Or all at once
 const main2 = fx(function* () {
-  const { x, y } = yield* env<{ x: number, y: string }>()
+  const { x, y } = yield* get<{ x: number, y: string }>()
   console.log(x, y)
 })
 
+// @ts-expect-error missing y
+provideAll({}, provide({ x: 1 }, main2))
+
 run(
-  withEnv({ y: 'hello' }, withEnv({ x: 1 }, main2))
-).then(console.log)
+  provide({ y: 'hello' }, provide({ x: 1 }, main2))
+).then(r => console.log('main2', r))
 
 // --------------------------------------------------
 
 // isolateEnv enforces all remaining requirements
 // must be meet
 const main3 = fx(function* () {
-  const { x, y } = yield* env<{ x: number, y: string }>()
+  const { x, y } = yield* get<{ x: number, y: string }>()
   console.log(x, y)
 })
+
+// @ts-expect-error missing y
+provideAll({ x: 1 }, main3)
 
 run(
   // Not supplying the complete remaining
   // environment here will be a type error
-  isolateEnv({ x: 1, y: 'hello' }, main3)
-).then(console.log)
+  provideAll({ x: 1, y: 'hello' }, main3)
+).then(r => console.log('main3', r))
