@@ -176,7 +176,7 @@ export function* handle<const E1, const R1, const E extends Record<string, Effec
     finally?: (s: S) => Fx<FE, void>
   }): Fx<SE | Exclude<E1, InstanceType<E[keyof E]>> | E2 | FE, R1 | R> {
   const i = f[Symbol.iterator]()
-  pushContext({ effects: effects, handler: handler })
+  pushContext({ effects, handler })
   let s
 
   try {
