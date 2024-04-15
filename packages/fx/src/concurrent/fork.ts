@@ -14,22 +14,7 @@ export const withUnboundedConcurrency = <const E, const A>(f: Fx<E, A>) => handl
 })
 
 export const spawn = (f: Fx<unknown, unknown>, context: Context[]) => {
-  const processes = new Set<Process<unknown>>()
-  let disposed = false
-
-  const addProcess = (p: Process<unknown>) => {
-    if (disposed) p.dispose[Symbol.dispose]()
-    else processes.add(p)
-  }
-
-  const removeProcess = (p: Process<unknown>) =>
-    processes.delete(p)
-
-  const disposeAll = () => {
-    if (disposed) return
-    disposed = true
-    processes.forEach(p => p.dispose[Symbol.dispose]())
-  }
+  const processes = new ProcessSet()
 
   const promise = new Promise((resolve, reject) => {
     setImmediate(async () => {
@@ -40,24 +25,24 @@ export const spawn = (f: Fx<unknown, unknown>, context: Context[]) => {
       while (!ir2.done) {
         if (isEffect(Async, ir2.value)) {
           const p = runProcess(ir2.value.arg)
-          addProcess(p)
-          const a = await p.promise.finally(() => removeProcess(p))
+          processes.add(p)
+          const a = await p.promise.finally(() => processes.remove(p))
           setContext(context)
           ir2 = i2.next(a)
         }
         else if (isEffect(Concurrent, ir2.value)) {
           const p = spawn(ir2.value.arg, context)
-          addProcess(p)
-          p.promise.finally(() => removeProcess(p))
+          processes.add(p)
+          p.promise.finally(() => processes.remove(p))
           ir2 = i2.next(p.promise)
         }
         else return reject(new Error(`Unexpected effect in forked Fx: ${JSON.stringify(ir2.value)}`))
       }
       resolve(ir2.value)
     })
-  }).catch(e => (disposeAll(), Promise.reject(e)))
+  }).catch(e => (processes[Symbol.dispose](), Promise.reject(e)))
 
-  return new Process(promise, { [Symbol.dispose]: disposeAll })
+  return new Process(promise, processes)
 }
 
 const runProcess = <A>(run: (f: (a: A) => void) => Disposable) => {
@@ -67,3 +52,23 @@ const runProcess = <A>(run: (f: (a: A) => void) => Disposable) => {
 
 const withContext = (c: Context[], f: Fx<unknown, unknown>) =>
   c.reduceRight((f, c) => handle(f, c.effects, c.handler as any), f)
+
+class ProcessSet {
+  private disposed = false
+  private disposables = new Set<Disposable>()
+
+  add(disposable: Disposable) {
+    if (this.disposed) disposable[Symbol.dispose]()
+    else this.disposables.add(disposable)
+  }
+
+  remove(disposable: Disposable) {
+    this.disposables.delete(disposable)
+  }
+
+  [Symbol.dispose]() {
+    if (this.disposed) return
+    this.disposed = true
+    this.disposables.forEach(d => d[Symbol.dispose]())
+  }
+}

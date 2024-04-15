@@ -12,24 +12,23 @@ export class Process<A> {
 
 type Result<P> = P extends Process<infer A> ? A : never
 
-type All<Processes extends readonly Process<unknown>[]> = {
-  readonly [K in keyof Processes]: Result<Processes[K]>
-}
-
 export const all = <Processes extends readonly Process<unknown>[]>(...processes: Processes) => {
-  const dispose = { [Symbol.dispose]() { processes.forEach(p => p.dispose[Symbol.dispose]()) } }
+  const dispose = new DisposeAll(processes)
   return new Process(
     Promise.all(processes.map(p => p.promise)).catch(e => (dispose[Symbol.dispose](), Promise.reject(e))),
     dispose
-  ) as Process<All<Processes>>
+  ) as Process<{ readonly [K in keyof Processes]: Result<Processes[K]> }>
 }
 
-type Race<Processes extends readonly Process<unknown>[]> = Result<Processes[number]>
-
 export const race = <Processes extends readonly Process<unknown>[]>(...processes: Processes) => {
-  const dispose = { [Symbol.dispose]() { processes.forEach(p => p.dispose[Symbol.dispose]()) } }
+  const dispose = new DisposeAll(processes)
   return new Process(
     Promise.race(processes.map(p => p.promise)).finally(() => dispose[Symbol.dispose]()),
     dispose
-  ) as Process<Race<Processes>>
+  ) as Process<Result<Processes[number]>>
+}
+
+class DisposeAll {
+  constructor(private readonly processes: readonly Process<unknown>[]) { }
+  [Symbol.dispose]() { for (const p of this.processes) p.dispose[Symbol.dispose]() }
 }
