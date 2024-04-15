@@ -47,7 +47,10 @@ export const spawn = (f: Fx<unknown, unknown>, context: Context[]) => {
 
 const runProcess = <A>(run: (f: (a: A) => void) => Disposable) => {
   let dispose: Disposable
-  return new Process<A>(new Promise<A>(resolve => dispose = run(resolve)), { [Symbol.dispose]() { dispose[Symbol.dispose]() } })
+  return new Process<A>(
+    new Promise<A>(resolve => dispose = run(resolve)),
+    { [Symbol.dispose]() { dispose[Symbol.dispose]() } }
+  )
 }
 
 const withContext = (c: Context[], f: Fx<unknown, unknown>) =>
@@ -69,6 +72,6 @@ class ProcessSet {
   [Symbol.dispose]() {
     if (this.disposed) return
     this.disposed = true
-    this.disposables.forEach(d => d[Symbol.dispose]())
+    for (const d of this.disposables) d[Symbol.dispose]()
   }
 }

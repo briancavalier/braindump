@@ -29,6 +29,6 @@ export const race = <Processes extends readonly Process<unknown>[]>(...processes
 }
 
 class DisposeAll {
-  constructor(private readonly processes: readonly Process<unknown>[]) { }
+  constructor(private readonly processes: Iterable<Process<unknown>>) { }
   [Symbol.dispose]() { for (const p of this.processes) p.dispose[Symbol.dispose]() }
 }
