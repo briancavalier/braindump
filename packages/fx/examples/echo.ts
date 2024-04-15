@@ -1,6 +1,6 @@
 import { createInterface } from 'readline/promises'
 
-import { Effect, Fx, fx, wait, of, run, sync, handle } from '../src'
+import { Effect, Fx, fx, of, run, sync, handle, tryPromise } from '../src'
 
 class Print extends Effect('Print')<string> { }
 
@@ -25,7 +25,7 @@ const handlePrint = <const E, const A>(f: Fx<E, A>) => handle(f, {Print}, {
 const handleRead = <const E, const A>(f: Fx<E, A>) => handle(f, {Read}, {
   initially: sync(() => createInterface({ input: process.stdin, output: process.stdout })),
   handle: (read, readline) => fx(function* () {
-    const s = yield* wait(readline.question(read.arg))
+    const s = yield* tryPromise((signal => readline.question(read.arg, { signal })))
     return [s, readline]
   }),
   finally: readline => of(readline.close())
@@ -48,4 +48,4 @@ const m = handleRead(handlePrint(main))
 // Run with pure Read and Print effects that only collect input and output
 // const m = handlePrintPure(handleReadPure(['a', 'b', 'c'], main))
 
-run(m).then(console.log)
+run(m).promise.then(console.log)

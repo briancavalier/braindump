@@ -1,6 +1,5 @@
-import { fx } from '../src'
+import { fx, run } from '../src'
 import { get, provideAll, provide } from '../src/env'
-import { run } from '../src/runtime/default'
 
 // --------------------------------------------------
 
@@ -19,7 +18,7 @@ provideAll({}, provide({ x: 1, y: 123 }, main1))
 
 run(
   provide({ y: 'hello' }, provide({ x: 1 }, main1))
-).then(r => console.log('main1', r))
+).promise.then(r => console.log('main1', r))
 
 // --------------------------------------------------
 
@@ -34,7 +33,7 @@ provideAll({}, provide({ x: 1 }, main2))
 
 run(
   provide({ y: 'hello' }, provide({ x: 1 }, main2))
-).then(r => console.log('main2', r))
+).promise.then(r => console.log('main2', r))
 
 // --------------------------------------------------
 
@@ -52,4 +51,4 @@ run(
   // Not supplying the complete remaining
   // environment here will be a type error
   provideAll({ x: 1, y: 'hello' }, main3)
-).then(r => console.log('main3', r))
+).promise.then(r => console.log('main3', r))

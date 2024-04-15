@@ -1,5 +1,4 @@
-import { Effect, Fx, fx, of, handle } from '../src'
-import { run } from '../src/runtime/default'
+import { Effect, Fx, fx, of, handle, run } from '../src'
 
 type Key<K extends PropertyKey, A> = K & { readonly value: A }
 
@@ -51,4 +50,4 @@ const main = fx(function* () {
 const m1 = runState({ x: 1 }, main)
 const m2 = runState({ k: 2 }, m1)
 
-run(m2).then(console.log)
+run(m2).promise.then(console.log)

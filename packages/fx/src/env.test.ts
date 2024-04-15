@@ -3,21 +3,22 @@ import { describe, it } from 'node:test'
 
 import { get, provide, provideAll } from './env'
 import { fx } from './fx'
-import { run } from './runtime/sync'
+
+import { runSync } from '.'
 
 describe('Env', () => {
   describe('get', () => {
     it('given environment, returns requested items', () => {
       const f = get<{ x: number, y: string }>()
       const expected = { x: Math.random(), y: `${Math.random()}` }
-      const result = run(provideAll(expected, f))
+      const result = runSync(provideAll(expected, f))
       assert.equal(result, expected)
     })
 
     it('given environment, returns requested item subset', () => {
       const f = get<{ x: number }>()
       const expected = Math.random()
-      const { x } = run(provideAll({ x: expected }, f))
+      const { x } = runSync(provideAll({ x: expected }, f))
       assert.equal(x, expected)
     })
 
@@ -31,7 +32,7 @@ describe('Env', () => {
       })
 
       const expected = { x: Math.random(), y: `${Math.random()}` }
-      const [xy, { x }, { y }] = run(provideAll(expected, f))
+      const [xy, { x }, { y }] = runSync(provideAll(expected, f))
 
       assert.deepEqual(xy, { x, y })
     })
@@ -49,7 +50,7 @@ describe('Env', () => {
       const x = Math.random()
       const y = `${Math.random()}`
 
-      const result = run(provide({ x, y: '' }, provide({ y }, f)))
+      const result = runSync(provide({ x, y: '' }, provide({ y }, f)))
 
       assert.equal(result.x, x)
       assert.equal(result.y, y)
