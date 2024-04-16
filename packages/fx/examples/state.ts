@@ -2,14 +2,14 @@ import { Effect, Fx, Handler, Run, fx, ok } from '../src'
 
 type Key<K extends PropertyKey, A> = K & { readonly value: A }
 
-class Get<K extends PropertyKey, A> extends Effect('Get')<Key<K, A>> { }
-class Set<K extends PropertyKey, A> extends Effect('Set')<{ readonly key: Key<K, A>, readonly value: unknown }> { }
+class Get<K extends PropertyKey, A> extends Effect('Get')<Key<K, A>, A> { }
+class Set<K extends PropertyKey, A> extends Effect('Set')<{ readonly key: Key<K, A>, readonly value: unknown }, void> { }
 
 const get = <const K extends PropertyKey, const A>(key: Key<K, A>) =>
-  new Get(key).send<A>()
+  new Get(key).send()
 
 const set = <const K extends PropertyKey, const A>(key: Key<K, A>, value: A) =>
-  new Set({ key, value }).send<void>()
+  new Set({ key, value }).send()
 
 type StateEffects<M extends Record<PropertyKey, unknown>> = {
   readonly [K in keyof M]: Get<K, M[K]> | Set<K, M[K]>
