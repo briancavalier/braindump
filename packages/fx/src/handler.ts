@@ -207,5 +207,5 @@ export function* handle<const E1, const R1, const E extends Record<string, Effec
   }
 }
 
-const matches = <const T extends Record<string, EffectType>, const E>(t: T, e: E): e is Extract<InstanceType<T[keyof T]> , E>=>
+const matches = <const T extends Record<string, EffectType>, const E>(t: T, e: E): e is Extract<InstanceType<T[keyof T]> , E> =>
   (e as any).type as PropertyKey in t

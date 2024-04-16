@@ -1,4 +1,4 @@
-import { fx, Run, Env } from '../src'
+import { Env, Run, fx } from '../src'
 
 // --------------------------------------------------
 
@@ -10,10 +10,10 @@ const main1 = fx(function* () {
 })
 
 // @ts-expect-error missing y
-provideAll({}, provide({ x: 1 }, main1))
+Env.provideAll({}, Env.provide({ x: 1 }, main1))
 
 // @ts-expect-error wrong type for y
-provideAll({}, provide({ x: 1, y: 123 }, main1))
+Env.provideAll({}, Env.provide({ x: 1, y: 123 }, main1))
 
 Run.async(
   Env.provide({ y: 'hello' }, Env.provide({ x: 1 }, main1))
@@ -28,7 +28,7 @@ const main2 = fx(function* () {
 })
 
 // @ts-expect-error missing y
-provideAll({}, provide({ x: 1 }, main2))
+Env.provideAll({}, Env.provide({ x: 1 }, main2))
 
 Run.async(
   Env.provide({ y: 'hello' }, Env.provide({ x: 1 }, main2))
@@ -44,7 +44,7 @@ const main3 = fx(function* () {
 })
 
 // @ts-expect-error missing y
-provideAll({ x: 1 }, main3)
+Env.provideAll({ x: 1 }, main3)
 
 Run.async(
   // Not supplying the complete remaining

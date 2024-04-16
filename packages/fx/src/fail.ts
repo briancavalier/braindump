@@ -1,5 +1,5 @@
 import { Effect, Fx } from './fx'
-import { done, control, resume } from './handler'
+import { control, done, resume } from './handler'
 
 export class Fail<const E> extends Effect('Fail')<E> { }
 
@@ -11,7 +11,7 @@ export const catchIf = <const E, const A, const F>(
   match: (x: unknown) => x is F,
   f: Fx<E, A>
 ) => control(f, {Fail}, {
-  handle: function*(e) {
+  *handle(e) {
     return match(e.arg) ? done(e.arg) : resume(yield* e as any)
   }
 }) as Fx<Exclude<E, Fail<F>>, A | Failures<E>>

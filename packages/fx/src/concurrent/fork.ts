@@ -1,7 +1,7 @@
 import { Async } from '../async'
-import { getContext, Context, setContext } from '../context'
+import { Context, getContext, setContext } from '../context'
 import { Effect, Fx, ok } from '../fx'
-import { match, handle } from '../handler'
+import { handle, match } from '../handler'
 
 import { Process } from './process'
 
