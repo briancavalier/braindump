@@ -1,5 +1,5 @@
-import { Effect, Fx, fx, of } from './fx'
-import { handle } from './handle'
+import { Effect, Fx, fx, ok } from './fx'
+import { handle } from './handler'
 
 export class Env<E extends Record<PropertyKey, unknown>> extends Effect('Env')<void | E> { }
 
@@ -15,7 +15,7 @@ type ExcludeEnv<E, S> =
 
 export const provide = <const E, const A, const S extends Record<PropertyKey, unknown>>(s: S, f: Fx<E, A>) =>
   handle(f, { Env }, {
-    initially: of(s),
+    initially: ok(s),
     handle: (_, s) => fx(function* () {
       return [{ ...(yield* get()), ...s }, s]
     })
@@ -26,8 +26,8 @@ type EachEnv<E> = E extends Env<infer A> ? A : never
 
 export const provideAll = <const E, const A, const S extends EnvOf<E> & Record<PropertyKey, unknown>>(s: S, f: Fx<E, A>) =>
   handle(f, { Env }, {
-    initially: of(s),
-    handle: (_, s) => of([s, s])
+    initially: ok(s),
+    handle: (_, s) => ok([s, s])
   }) as Fx<ExcludeEnv<E, S>, A>
 
 type U2I<U> = (U extends any ? (k: U) => void : never) extends ((k: infer I) => void) ? I : never

@@ -1,4 +1,4 @@
-import { Process } from './concurrent'
+import { Process } from './concurrent/process'
 import { Effect, Fx } from './fx'
 
 export class Async extends Effect('Wait')<(f: (x: any) => void) => Disposable> { }

@@ -2,15 +2,14 @@ import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 
 import { catchIf, fail } from './fail'
-import { fx, of } from './fx'
-
-import { runSync } from '.'
+import { fx, ok } from './fx'
+import { sync as runSync } from './run'
 
 describe('Fail', () => {
   describe('catchIf', () => {
     it('given no failures, returns result', () => {
       const expected = Math.random()
-      const f = of(expected)
+      const f = ok(expected)
 
       const actual = runSync(catchIf((x): x is unknown => true, f))
       assert.equal(actual, expected)

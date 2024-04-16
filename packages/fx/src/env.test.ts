@@ -3,8 +3,7 @@ import { describe, it } from 'node:test'
 
 import { get, provide, provideAll } from './env'
 import { fx } from './fx'
-
-import { runSync } from '.'
+import { sync as runSync } from './run'
 
 describe('Env', () => {
   describe('get', () => {

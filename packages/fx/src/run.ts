@@ -4,11 +4,11 @@ import { Process } from './concurrent/process'
 import { provideAll } from './env'
 import { Fx } from './fx'
 
-export const run = <const R>(f: Fx<Async | Concurrent, R>): Process<R> =>
+export const async = <const R>(f: Fx<Async | Concurrent, R>): Process<R> =>
   getResult(withUnboundedConcurrency(fork(provideAll({}, f))))
 
 
-export const runSync = <const R>(f: Fx<never, R>): R =>
+export const sync = <const R>(f: Fx<never, R>): R =>
   getResult(provideAll({}, f))
 
 

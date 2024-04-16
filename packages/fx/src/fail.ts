@@ -1,5 +1,5 @@
 import { Effect, Fx } from './fx'
-import { done, control, resume } from './handle'
+import { done, control, resume } from './handler'
 
 export class Fail<const E> extends Effect('Fail')<E> { }
 

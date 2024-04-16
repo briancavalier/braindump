@@ -1,4 +1,4 @@
-import { Effect, Fx, fx, of, handle, run } from '../src'
+import { Effect, Fx, Handler, Run, fx, ok } from '../src'
 
 type Key<K extends PropertyKey, A> = K & { readonly value: A }
 
@@ -16,8 +16,8 @@ type StateEffects<M extends Record<PropertyKey, unknown>> = {
 }[keyof M]
 
 const handleState = <const E, const A, S extends Record<PropertyKey, unknown>, const R>(s: S, r: (a: A, s: S) => R, f: Fx<E, A>) =>
-  handle(f, {Get, Set}, {
-    initially: of(s),
+  Handler.handle(f, {Get, Set}, {
+    initially: ok(s),
     handle: (gs, s) => fx(function* () {
       switch(gs.type) {
         case 'Get':
@@ -50,4 +50,4 @@ const main = fx(function* () {
 const m1 = runState({ x: 1 }, main)
 const m2 = runState({ k: 2 }, m1)
 
-run(m2).promise.then(console.log)
+Run.async(m2).promise.then(console.log)
