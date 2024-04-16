@@ -36,7 +36,9 @@ export const console = <const E, const A>(f: Fx<E, A>) => handle(f, { Log }, {
 
 export const collect = <const E, const A>(f: Fx<E, A>) => handle(f, { Log }, {
   initially: ok([] as readonly Readonly<{ time: number, msg: LogMessage }>[]),
-  handle: function* (e, l) { return [undefined, [...l, { time: yield* now, msg: e.arg }] as const] },
+  *handle(e, l) {
+    return [undefined, [...l, { time: yield* now, msg: e.arg }] as const]
+  },
   return: (r, l) => [r, l]
 })
 
