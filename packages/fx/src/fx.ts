@@ -1,19 +1,21 @@
 export interface EffectType {
-  readonly type: unknown
+  readonly tag: unknown
   new (...args: readonly any[]): any
 }
 
 export interface AnyEffect {
-  readonly type: unknown,
+  readonly tag: unknown,
   readonly arg: unknown
+  readonly R: unknown
 }
 
-export const Effect = <const T>(type: T) =>
-  class <A> implements AnyEffect {
-    public readonly type = type
-    public static readonly type = type
+export const Effect = <const T>(tag: T) =>
+  class <A, R = unknown> implements AnyEffect {
+    public readonly tag = tag
+    public static readonly tag = tag
+    public readonly R!: R
     constructor(public readonly arg: A) { }
-    request<R>() { return this as Fx<this, R> }
+    send<RR extends R = R>() { return this as Fx<this, RR> }
     *[Symbol.iterator](): Iterator<this, unknown, any> {
       return yield this
     }

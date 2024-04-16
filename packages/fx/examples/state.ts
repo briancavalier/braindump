@@ -6,10 +6,10 @@ class Get<K extends PropertyKey, A> extends Effect('Get')<Key<K, A>> { }
 class Set<K extends PropertyKey, A> extends Effect('Set')<{ readonly key: Key<K, A>, readonly value: unknown }> { }
 
 const get = <const K extends PropertyKey, const A>(key: Key<K, A>) =>
-  new Get(key).request<A>()
+  new Get(key).send<A>()
 
 const set = <const K extends PropertyKey, const A>(key: Key<K, A>, value: A) =>
-  new Set({ key, value }).request<void>()
+  new Set({ key, value }).send<void>()
 
 type StateEffects<M extends Record<PropertyKey, unknown>> = {
   readonly [K in keyof M]: Get<K, M[K]> | Set<K, M[K]>
@@ -19,7 +19,7 @@ const handleState = <const E, const A, S extends Record<PropertyKey, unknown>, c
   Handler.handle(f, {Get, Set}, {
     initially: ok(s),
     handle: (gs, s) => fx(function* () {
-      switch(gs.type) {
+      switch(gs.tag) {
         case 'Get':
           return (gs.arg as keyof typeof s in s)
             ? [s[gs.arg as keyof typeof s], s]

@@ -1,5 +1,5 @@
 import { Effect } from '../src/fx'
 
-export class Now extends Effect('Now')<void> { }
+export class Now extends Effect('Now')<void, number> { }
 
-export const now = new Now().request<number>()
+export const now = new Now().send()

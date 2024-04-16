@@ -5,9 +5,9 @@ import { handle, match } from '../handler'
 
 import { Process } from './process'
 
-export class Concurrent extends Effect('Concurrent')<Fx<unknown, unknown>> { }
+export class Concurrent extends Effect('Concurrent')<Fx<unknown, unknown>, Process<unknown>> { }
 
-export const fork = <const E, const A>(fx: Fx<E, A>) => new Concurrent(fx) as Fx<Exclude<E, Async> | Concurrent, Process<A>>
+export const fork = <const E, const A>(fx: Fx<E, A>) => new Concurrent(fx).send() as Fx<Exclude<E, Async> | Concurrent, Process<A>>
 
 export const withUnboundedConcurrency = <const E, const A>(f: Fx<E, A>) => handle(f, { Concurrent }, {
   handle: c => ok(spawn(c.arg, [...getContext()]))

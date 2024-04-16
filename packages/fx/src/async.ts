@@ -1,9 +1,11 @@
 import { Process } from './concurrent/process'
 import { Effect, Fx } from './fx'
 
-export class Async extends Effect('Wait')<(f: (x: any) => void) => Disposable> { }
+type Run<A = any> = (f: (x: A) => void) => Disposable
 
-export const async = <const A>(run: (f: (a: A) => void) => Disposable) => new Async(run).request<A>()
+export class Async extends Effect('Async')<Run> { }
+
+export const async = <const A>(run: Run<A>) => new Async(run).send<A>()
 
 export const wait = <const A>(p: Process<A>): Fx<Async, A> => async<A>(f => {
   p.promise.then(f)

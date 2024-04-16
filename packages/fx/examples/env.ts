@@ -9,7 +9,7 @@ const main1 = fx(function* () {
   console.log(x, y)
 })
 
-// @ts-expect-error missing y
+// @ts-expect-error wrong type for y
 Env.provideAll({}, Env.provide({ x: 1 }, main1))
 
 // @ts-expect-error wrong type for y

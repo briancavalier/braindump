@@ -17,9 +17,9 @@ export interface LogMessage {
   context?: Record<string, unknown> | undefined
 }
 
-class Log extends Effect('Log')<LogMessage> { }
+class Log extends Effect('Log')<LogMessage, void> { }
 
-const log = (m: LogMessage) => new Log(m).request<void>()
+const log = (m: LogMessage) => new Log(m).send()
 
 export const console = <const E, const A>(f: Fx<E, A>) => handle(f, { Log }, {
   *handle(e) {

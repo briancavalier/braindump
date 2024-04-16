@@ -1,16 +1,19 @@
 import { Effect, Fx, ok } from './fx'
 import { handle } from './handler'
 
-export class Env<E extends Record<PropertyKey, unknown>> extends Effect('Env')<void | E> { }
+// void | E allows the arg to be omitted while
+// still exposing
+export class Env<E extends Record<PropertyKey, unknown>> extends Effect('Env')<void | E, E> { }
 
 export const get = <const E extends Record<PropertyKey, unknown>>() =>
-  new Env<E>().request<E>()
+  new Env<E>().send()
 
 type ExcludeEnv<E, S> =
-  E extends Env<infer A extends Record<PropertyKey, unknown>>
-    ? S extends A
-      ? never
-  : S extends Record<PropertyKey, unknown> ? Env<{ readonly [K in keyof A as S[K] extends A[K] ? never : K]: A[K] }> : E
+  E extends Env<Record<PropertyKey, unknown>>
+    ? S extends E['R'] ? never
+    : S extends Record<PropertyKey, unknown>
+      ? Env<{ readonly [K in keyof E['R'] as S[K] extends E['R'][K] ? never : K]: E['R'][K] }>
+      : E
   : E
 
 export const provide = <const E, const A, const S extends Record<PropertyKey, unknown>>(s: S, f: Fx<E, A>) =>

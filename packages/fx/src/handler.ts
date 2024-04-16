@@ -2,7 +2,7 @@ import { popContext, pushContext } from './context'
 import { EffectType, Fx } from './fx'
 
 export const match = <const Effect extends EffectType>(e: Effect, x: unknown): x is InstanceType<Effect> =>
-  !!x && typeof x === 'object' && (x as any).type === e.type
+  !!x && typeof x === 'object' && (x as EffectType).tag === e.tag
 
 export type Step<A, R, S> = Resume<A, S> | Return<R>
 export type Resume<A, S> = { tag: 'resume', value: A, state: S }
@@ -208,4 +208,4 @@ export function* handle<const E1, const R1, const E extends Record<string, Effec
 }
 
 const matches = <const T extends Record<string, EffectType>, const E>(t: T, e: E): e is Extract<InstanceType<T[keyof T]> , E> =>
-  (e as any).type as PropertyKey in t
+  (e as EffectType).tag as PropertyKey in t
