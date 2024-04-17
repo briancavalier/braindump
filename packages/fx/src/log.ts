@@ -1,5 +1,5 @@
 import { Effect, Fx, ok } from './fx'
-import { handle } from './handler'
+import { handle, resume } from './handler'
 import { now } from './time'
 
 export enum Level {
@@ -17,7 +17,7 @@ export interface LogMessage {
   context?: Record<string, unknown> | undefined
 }
 
-class Log extends Effect('Log')<LogMessage, void> { }
+export class Log extends Effect('Log')<LogMessage, void> {}
 
 const log = (m: LogMessage) => new Log(m).send()
 
@@ -25,11 +25,12 @@ export const console = <const E, const A>(f: Fx<E, A>) => handle(f, { Log }, {
   *handle(e) {
     const t = yield* now
     const { level, msg, data, context } = e.arg
+    const c = globalThis.console
     switch (level) {
-      case Level.debug: return globalThis.console.debug(new Date(t), 'DEBUG', msg, { ...data, ...context })
-      case Level.info: return globalThis.console.info(new Date(t), 'INFO ', msg, { ...data, ...context })
-      case Level.warn: return globalThis.console.warn(new Date(t), 'WARN ', msg, { ...data, ...context })
-      case Level.error: return globalThis.console.error(new Date(t), 'ERROR', msg, { ...data, ...context })
+      case Level.debug: return resume(c.debug(new Date(t), 'DEBUG', msg, { ...data, ...context }))
+      case Level.warn: return resume(c.warn(new Date(t), 'WARN ', msg, { ...data, ...context }))
+      case Level.error: return resume(c.error(new Date(t), 'ERROR', msg, { ...data, ...context }))
+      default: return resume(c.info(new Date(t), 'INFO ', msg, { ...data, ...context }))
     }
   }
 })
@@ -37,7 +38,7 @@ export const console = <const E, const A>(f: Fx<E, A>) => handle(f, { Log }, {
 export const collect = <const E, const A>(f: Fx<E, A>) => handle(f, { Log }, {
   initially: ok([] as readonly Readonly<{ time: number, msg: LogMessage }>[]),
   *handle(e, l) {
-    return [undefined, [...l, { time: yield* now, msg: e.arg }] as const]
+    return resume(undefined, [...l, { time: yield* now, msg: e.arg }] as const)
   },
   return: (r, l) => [r, l]
 })
@@ -46,13 +47,13 @@ export const silent = <const E, const A>(f: Fx<E, A>) => minLevel(f, Level.silen
 
 export const minLevel = <const E, const A>(f: Fx<E, A>, min: Level) => handle(f, { Log }, {
   *handle(e) {
-    return e.arg.level >= min ? yield* e : undefined
+    return resume(e.arg.level >= min ? yield* e : undefined)
   }
 })
 
 export const context = <const E, const A>(f: Fx<E, A>, context?: Record<string, unknown>) => handle(f, { Log }, {
   *handle(e) {
-    return yield* log({ ...e.arg, context: { ...e.arg.context, ...context } })
+    return resume(yield* log({ ...e.arg, context: { ...e.arg.context, ...context } }))
   }
 })
 

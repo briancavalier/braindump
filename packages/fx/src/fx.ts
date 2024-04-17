@@ -14,8 +14,11 @@ export const Effect = <const T>(tag: T) =>
     public readonly tag = tag
     public static readonly tag = tag
     public readonly R!: R
-    constructor(public readonly arg: A) { }
+
     send<RR extends R = R>() { return this as Fx<this, RR> }
+
+    constructor(public readonly arg: A) { }
+
     *[Symbol.iterator](): Iterator<this, unknown, any> {
       return yield this
     }

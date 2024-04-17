@@ -1,16 +1,16 @@
 import { Async } from '../async'
 import { Context, getContext, setContext } from '../context'
 import { Effect, Fx, ok } from '../fx'
-import { handle, match } from '../handler'
+import { handle, match, resume } from '../handler'
 
 import { Process } from './process'
 
-export class Concurrent extends Effect('Concurrent')<Fx<unknown, unknown>, Process<unknown>> { }
+export class Fork extends Effect('Fork')<Fx<unknown, unknown>, Process<unknown>> { }
 
-export const fork = <const E, const A>(fx: Fx<E, A>) => new Concurrent(fx).send() as Fx<Exclude<E, Async> | Concurrent, Process<A>>
+export const fork = <const E, const A>(fx: Fx<E, A>) => new Fork(fx).send() as Fx<Exclude<E, Async> | Fork, Process<A>>
 
-export const withUnboundedConcurrency = <const E, const A>(f: Fx<E, A>) => handle(f, { Concurrent }, {
-  handle: c => ok(spawn(c.arg, [...getContext()]))
+export const unbounded = <const E, const A>(f: Fx<E, A>) => handle(f, { Fork }, {
+  handle: c => ok(resume(spawn(c.arg, [...getContext()])))
 })
 
 export const spawn = (f: Fx<unknown, unknown>, context: Context[]) => {
@@ -30,7 +30,7 @@ export const spawn = (f: Fx<unknown, unknown>, context: Context[]) => {
           setContext(context)
           ir2 = i2.next(a)
         }
-        else if (match(Concurrent, ir2.value)) {
+        else if (match(Fork, ir2.value)) {
           const p = spawn(ir2.value.arg, context)
           processes.add(p)
           p.promise.finally(() => processes.remove(p))

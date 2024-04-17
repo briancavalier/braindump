@@ -6,6 +6,7 @@
   },
   "include": [
     "../src",
-    "."
+    ".",
+    "../experiments/log.ts"
   ]
 }

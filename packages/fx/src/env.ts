@@ -1,8 +1,8 @@
 import { Effect, Fx, ok } from './fx'
-import { handle } from './handler'
+import { handle, resume } from './handler'
 
 // void | E allows the arg to be omitted while
-// still exposing
+// still exposing E in the return type
 export class Env<E extends Record<PropertyKey, unknown>> extends Effect('Env')<void | E, E> { }
 
 export const get = <const E extends Record<PropertyKey, unknown>>() =>
@@ -20,7 +20,7 @@ export const provide = <const E, const A, const S extends Record<PropertyKey, un
   handle(f, { Env }, {
     initially: ok(s),
     *handle(_, s) {
-      return [{ ...(yield* get()), ...s }, s]
+      return resume({ ...(yield* get()), ...s }, s)
     }
   }) as Fx<ExcludeEnv<E, S>, A>
 
@@ -30,7 +30,7 @@ type EachEnv<E> = E extends Env<infer A> ? A : never
 export const provideAll = <const E, const A, const S extends EnvOf<E> & Record<PropertyKey, unknown>>(s: S, f: Fx<E, A>) =>
   handle(f, { Env }, {
     initially: ok(s),
-    handle: (_, s) => ok([s, s])
+    handle: (_, s) => ok(resume(s, s))
   }) as Fx<ExcludeEnv<E, S>, A>
 
 type U2I<U> = (U extends any ? (k: U) => void : never) extends ((k: infer I) => void) ? I : never
