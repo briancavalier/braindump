@@ -12,8 +12,8 @@ const handlePrintPure = <const E, const A>(f: Fx<E, A>) => Handler.handle(f, { P
   return: (_, s) => s
 })
 
-const handleReadPure = <const E, const A>(reads: readonly string[], f: Fx<E, A>) => Handler.handle(f, { Read }, {
-  initially: ok(reads),
+const handleReadPure = <const E, const A>(responses: readonly string[], f: Fx<E, A>) => Handler.handle(f, { Read }, {
+  initially: ok(responses),
   handle: (_, [s, ...ss]) => ok(Handler.resume(s, ss))
 })
 

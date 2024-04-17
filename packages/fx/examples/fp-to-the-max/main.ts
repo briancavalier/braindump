@@ -7,7 +7,7 @@ import { Effect, Env, fx } from '../../src'
 // https://www.youtube.com/watch?v=sxudIMiOo68
 
 // -------------------------------------------------------------------
-// New effects the game will need
+// #region New effects the game will need
 
 export class Print extends Effect('Print')<string, void> { }
 
@@ -23,6 +23,8 @@ export class RandomInt extends Effect('RandomInt')<Range, number> { }
 
 const nextInt = (range: Range) => new RandomInt(range).send()
 
+// #endregion
+
 // -------------------------------------------------------------------
 // The game
 
@@ -33,7 +35,10 @@ const checkAnswer = (secret: number, guess: number): boolean =>
 // Play one round of the game.  Generate a number and ask the user
 // to guess it.
 const play = (name: string, range: Range) => fx(function* () {
+  // It doesn't actually matter whether we generate the number before
+  // or after the user guesses, but we'll do it here
   const secret = yield* nextInt(range)
+
   const result = yield* read(`Dear ${name}, please guess a number from ${range.min} to ${range.max}: `)
 
   const guess = Number(result)
@@ -43,14 +48,19 @@ const play = (name: string, range: Range) => fx(function* () {
     yield* print(`You guessed right, ${name}!`)
   else
     yield* print(`You guessed wrong, ${name}! The number was: ${secret}`)
-
 })
 
 // Ask the user if they want to play again.
 // Note that we keep asking until the user gives an answer we recognize
 const checkContinue = (name: string) => fx(function* () {
-  const answer = yield* read(`Do you want to continue, ${name}? (y or n) `)
-  return answer[0].toLowerCase() === 'y'
+  while(true) {
+    const answer = yield* read(`Do you want to continue, ${name}? (y/n) `)
+    switch (answer.trim().toLowerCase()) {
+      case 'y': return true
+      case 'n': return false
+      default: yield* print('Please enter y or n.')
+    }
+  }
 })
 
 // Main game loop. Play round after round until the user chooses to quit
@@ -59,9 +69,10 @@ export const main = fx(function* () {
   yield* print(`Hello, ${name} welcome to the game!`)
 
   const range = yield* Env.get<Range>()
-  do {
+
+  do
     yield* play(name, range)
-  } while (yield* checkContinue(name))
+  while (yield* checkContinue(name))
 
   yield* print(`Thanks for playing, ${name}.`)
 })
