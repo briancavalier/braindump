@@ -14,8 +14,12 @@ const handleState = <const E, const A, const R, const S = StateOf<E>>(s: S, r: (
   Handler.control(f, {Get, Set}, {
     initially: ok(s),
     // eslint-disable-next-line require-yield
-    handle: (gs, s) =>
-      gs.tag === 'Get' ? ok(Handler.resume(s, s)) : ok(Handler.resume(undefined, gs.arg as S)),
+    *handle(gs, s) {
+      switch(gs.tag) {
+        case 'Get': return Handler.resume(s, s)
+        case 'Set': return Handler.resume(undefined, gs.arg as S)
+      }
+    },
     return: r
   }) as Fx<Exclude<E, Get<StateOf<E>> | Set<StateOf<E>>>, R>
 

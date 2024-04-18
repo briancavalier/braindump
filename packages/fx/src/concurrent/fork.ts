@@ -1,7 +1,7 @@
 import { Async } from '../async'
 import { Context, getContext, setContext } from '../context'
-import { Effect, Fx, ok } from '../fx'
-import { handle, match, resume } from '../handler'
+import { Effect, Fx, is, ok } from '../fx'
+import { handle, resume } from '../handler'
 
 import { Process } from './process'
 
@@ -23,14 +23,14 @@ export const spawn = (f: Fx<unknown, unknown>, context: Context[]) => {
       const i2 = fc[Symbol.iterator]()
       let ir2 = i2.next()
       while (!ir2.done) {
-        if (match(Async, ir2.value)) {
+        if (is(Async, ir2.value)) {
           const p = runProcess(ir2.value.arg)
           processes.add(p)
           const a = await p.promise.finally(() => processes.remove(p))
           setContext(context)
           ir2 = i2.next(a)
         }
-        else if (match(Fork, ir2.value)) {
+        else if (is(Fork, ir2.value)) {
           const p = spawn(ir2.value.arg, context)
           processes.add(p)
           p.promise.finally(() => processes.remove(p))

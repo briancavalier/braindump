@@ -3,14 +3,8 @@ export interface EffectType {
   new (...args: readonly any[]): any
 }
 
-export interface AnyEffect {
-  readonly tag: unknown,
-  readonly arg: unknown
-  readonly R: unknown
-}
-
 export const Effect = <const T>(tag: T) =>
-  class <A, R = unknown> implements AnyEffect {
+  class <A, R = unknown> {
     public readonly tag = tag
     public static readonly tag = tag
     public readonly R!: R
@@ -24,13 +18,16 @@ export const Effect = <const T>(tag: T) =>
     }
   } satisfies EffectType
 
-export type Fx<Effects, A> = {
-  [Symbol.iterator](): Iterator<Effects, A, unknown>
+export type Fx<E, A> = {
+  [Symbol.iterator](): Iterator<E, A, unknown>
 }
 
-export const fx = <const Effects, const A>(f: () => Generator<Effects, A>) => ({
+export const is = <const E extends EffectType>(e: E, x: unknown): x is InstanceType<E> =>
+  !!x && (x as any).tag === e.tag
+
+export const fx = <const E, const A>(f: () => Generator<E, A>) => ({
   [Symbol.iterator]: f
-}) as Fx<Effects, A>
+}) as Fx<E, A>
 
 // eslint-disable-next-line require-yield
 export const ok = <const A>(a: A) => fx(function* () { return a })

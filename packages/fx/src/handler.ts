@@ -1,9 +1,6 @@
 import { popContext, pushContext } from './context'
 import { EffectType, Fx } from './fx'
 
-export const match = <const Effect extends EffectType>(e: Effect, x: unknown): x is InstanceType<Effect> =>
-  !!x && typeof x === 'object' && (x as EffectType).tag === e.tag
-
 export type Step<A, R, S> = Resume<A, S> | Return<R>
 export type Resume<A, S = void> = { tag: 'resume', value: A, state: S }
 export type Return<A> = { tag: 'return', value: A }
