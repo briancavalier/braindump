@@ -10,4 +10,5 @@ type AnyHandler = {
 export type Context = {
   effects: Record<PropertyKey, EffectType>
   handler: AnyHandler
+  state: unknown
 }

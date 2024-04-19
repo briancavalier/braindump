@@ -43,7 +43,15 @@ const runProcess = <A>(run: (s: AbortSignal) => Promise<A>) => {
   return new Process<A>(run(s.signal), { [Symbol.dispose]() { s.abort() } })
 }
 
-export const withContext = (c: readonly Context[], f: Fx<unknown, unknown>) => c.reduce((f, c) => handle(f, c.effects, c.handler as any), f)
+export const withContext = (c: readonly Context[], f: Fx<unknown, unknown>) =>
+  c.reduce((f, c) => handle(
+    f,
+    c.effects,
+    c.handler.initially
+      ? { ...c.handler, initially: ok(c.state) }
+      : c.handler as any
+  ), f)
+
 class ProcessSet {
   private disposed = false;
   private disposables = new Set<Disposable>();

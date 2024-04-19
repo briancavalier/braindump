@@ -100,8 +100,8 @@ export function* control<const E1, const R1, const E extends Record<string, Effe
               break
           }
         }
-        else if (is(Fork, ir.value)) ir = i.next(yield ir.value as any)
-        else ir = i.next(yield ir.value as any)
+        else
+          ir = i.next(yield ir.value as any)
       }
 
       return handler.return ? handler.return(ir.value, s as never) : ir.value
@@ -193,8 +193,10 @@ export function* handle<const E1, const R1, const E extends Record<string, Effec
         s = hr.state
         ir = i.next(hr.value)
       }
-      else if (is(Fork, ir.value)) ir = i.next(yield new Fork(ir.value.arg, [...ir.value.context, { effects, handler }]) as any)
-      else ir = i.next(yield ir.value as any)
+      else if (is(Fork, ir.value))
+        ir = i.next(yield new Fork(ir.value.arg, [...ir.value.context, { effects, handler, state: s }]) as any)
+      else
+        ir = i.next(yield ir.value as any)
     }
 
     return handler.return ? handler.return(ir.value, s as never) : ir.value
