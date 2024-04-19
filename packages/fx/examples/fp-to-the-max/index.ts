@@ -16,7 +16,7 @@ const handlePrint = <const E, const A>(f: Fx<E, A>) => Handler.handle(f, { Print
 const handleRead = <const E, const A>(f: Fx<E, A>) => Handler.handle(f, { Read }, {
   initially: sync(() => createInterface({ input: process.stdin, output: process.stdout })),
   handle: (read, readline) => fx(function* () {
-    const s = yield* Async.tryPromise((signal => readline.question(read.arg, { signal })))
+    const s = yield* Async.run((signal => readline.question(read.arg, { signal })))
     return Handler.resume(s, readline)
   }),
   finally: readline => ok(readline.close())
@@ -32,5 +32,6 @@ const handleRandom = <const E, const A>(f: Fx<E, A>) => Handler.handle(f, { Rand
 Run.async(
   Env.provideAll({ min: 1, max: 10 },
     handlePrint(
-      handleRead(handleRandom(main)
+      handleRead(
+        handleRandom(main)
     ))))

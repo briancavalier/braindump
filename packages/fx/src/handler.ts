@@ -1,4 +1,4 @@
-import { popContext, pushContext } from './context'
+import { getContext, popContext, pushContext } from './context'
 import { EffectType, Fx } from './fx'
 
 export type Step<A, R, S> = Resume<A, S> | Return<R>
@@ -181,6 +181,7 @@ export function* handle<const E1, const R1, const E extends Record<string, Effec
   }): Fx<SE | Exclude<E1, InstanceType<E[keyof E]>> | E2 | FE, R1 | R> {
   const i = f[Symbol.iterator]()
   pushContext({ effects, handler })
+  console.log('push context', getContext())
   let s
 
   try {

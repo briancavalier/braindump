@@ -20,6 +20,7 @@
     "node": true
   },
   "rules": {
+    "no-async-promise-executor": "off",
     "require-yield": "off",
     "@typescript-eslint/no-empty-interface": "off",
     "@typescript-eslint/no-explicit-any": "off",

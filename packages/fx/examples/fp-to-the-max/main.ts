@@ -41,7 +41,7 @@ const play = (name: string, range: Range) => fx(function* () {
 
   const result = yield* read(`Dear ${name}, please guess a number from ${range.min} to ${range.max}: `)
 
-  const guess = Number(result)
+  const guess = Number.parseInt(result, 10)
   if (!Number.isInteger(guess))
     yield* print('You did not enter an integer!')
   else if (checkAnswer(secret, guess))
