@@ -22,7 +22,7 @@ export const provide = <const E, const A, const S extends Record<PropertyKey, un
     *handle(_, s) {
       return resume({ ...(yield* get()), ...s }, s)
     }
-  }) as Fx<ExcludeEnv<E, S>, A>
+  }) as Fx<ExcludeEnv<E, S>, readonly [A, S]>
 
 export type EnvOf<E> = U2I<EachEnv<E>>
 type EachEnv<E> = E extends Get<infer A> ? A : never
@@ -31,6 +31,6 @@ export const provideAll = <const E, const A, const S extends EnvOf<E> & Record<P
   handle(f, [Get], {
     initially: ok(s),
     handle: (_, s) => ok(resume(s, s))
-  }) as Fx<ExcludeEnv<E, S>, A>
+  }) as Fx<ExcludeEnv<E, S>, readonly [A, S]>
 
 type U2I<U> = (U extends any ? (k: U) => void : never) extends ((k: infer I) => void) ? I : never

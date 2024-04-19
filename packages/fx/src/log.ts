@@ -39,8 +39,7 @@ export const collect = <const E, const A>(f: Fx<E, A>) => handle(f, [Log], {
   initially: ok([] as readonly Readonly<{ time: number, msg: LogMessage }>[]),
   *handle(e, l) {
     return resume(undefined, [...l, { time: yield* now, msg: e.arg }] as const)
-  },
-  return: (r, l) => [r, l]
+  }
 })
 
 export const silent = <const E, const A>(f: Fx<E, A>) => minLevel(f, Level.silent)

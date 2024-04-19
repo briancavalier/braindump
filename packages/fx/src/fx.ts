@@ -18,7 +18,7 @@ export const Effect = <const T>(tag: T) =>
     }
   } satisfies EffectType
 
-export type Fx<E, A> = {
+export interface Fx<E, A> {
   [Symbol.iterator](): Iterator<E, A, unknown>
 }
 
@@ -34,3 +34,8 @@ export const ok = <const A>(a: A) => fx(function* () { return a })
 
 // eslint-disable-next-line require-yield
 export const sync = <const A>(f: () => A) => fx(function* () { return f() })
+
+export const map = <const E, const A, const B>(f: (a: A) => B) =>
+  (fa: Fx<E, A>) => fx(function*() {
+    return f(yield* fa)
+  })

@@ -16,23 +16,6 @@ export const done = <const A>(a: A): Step<never, A, never> => ({ tag: 'return', 
 export type Effects = readonly EffectType[]
 export type Type<E extends Effects> = InstanceType<E[number]>
 
-export function control<const E1, const R1, const E extends Effects, const SE, const FE, const S, const A, const E2, const R2, const R>(
-  f: Fx<E1, R1>,
-  effects: E,
-  handler: {
-    initially: Fx<SE, S>,
-    handle: (e: Type<E>, s: S) => Fx<E2, Step<A, R2, S>>
-    return: (r: R1 | R2, s: S) => R
-    finally: (s: S) => Fx<FE, void>
-  }): Fx<SE | Exclude<E1, Type<E>> | E2 | FE, R>
-export function control<const E1, const R1, const E extends Effects, const FE, const A, const E2, const R2, const R>(
-  f: Fx<E1, R1>,
-  effects: E,
-  handler: {
-    handle: (e: Type<E>) => Fx<E2, Step<A, R2, void>>
-    return: (r: R1 | R2) => R
-    finally: () => Fx<FE, void>
-  }): Fx<Exclude<E1, Type<E>> | E2 | FE, R>
 export function control<const E1, const R1, const E extends Effects, const SE, const FE, const S, const A, const E2, const R2>(
   f: Fx<E1, R1>,
   effects: E,
@@ -40,29 +23,14 @@ export function control<const E1, const R1, const E extends Effects, const SE, c
     initially: Fx<SE, S>,
     handle: (e: Type<E>, s: S) => Fx<E2, Step<A, R2, S>>
     finally: (s: S) => Fx<FE, void>
-  }): Fx<SE | Exclude<E1, Type<E>> | E2 | FE, R1 | R2>
-export function control<const E1, const R1, const E extends Effects, const SE, const S, const A, const E2, const R2, const R>(
-  f: Fx<E1, R1>,
-  effects: E,
-  handler: {
-    initially: Fx<SE, S>,
-    handle: (e: Type<E>, s: S) => Fx<E2, Step<A, R2, S>>
-    return: (r: R1 | R2, s: S) => R
-  }): Fx<SE | Exclude<E1, Type<E>> | E2, R>
-export function control<const E1, const R1, const E extends Effects, const A, const E2, const R2, const R>(
-  f: Fx<E1, R1>,
-  effects: E,
-  handler: {
-    handle: (e: Type<E>) => Fx<E2, Step<A, R2, void>>
-    return: (r: R1 | R2) => R
-  }): Fx<Exclude<E1, Type<E>> | E2, R>
+  }): Fx<SE | Exclude<E1, Type<E>> | E2 | FE, readonly [R1 | R2, S]>
 export function control<const E1, const R1, const SE, const E extends Effects, const S, const A, const E2, const R2>(
   f: Fx<E1, R1>,
   effects: E,
   handler: {
     initially: Fx<SE, S>,
     handle: (e: Type<E>, s: S) => Fx<E2, Step<A, R2, S>>
-  }): Fx<SE | Exclude<E1, Type<E>> | E2, R1 | R2>
+  }): Fx<SE | Exclude<E1, Type<E>> | E2, readonly [R1 | R2, S]>
 export function control<const E1, const R1, const E extends Effects, const FE, const A, const E2, const R2>(
   f: Fx<E1, R1>,
   effects: E,
@@ -76,15 +44,14 @@ export function control<const E1, const R1, const E extends Effects, const A, co
   handler: {
     handle: (e: Type<E>) => Fx<E2, Step<A, R2, void>>
   }): Fx<Exclude<E1, Type<E>> | E2, R1 | R2>
-export function* control<const E1, const R1, const E extends Effects, const SE, const FE, const S, const A, const E2, const R2, const R>(
+export function* control<const E1, const R1, const E extends Effects, const SE, const FE, const S, const A, const E2, const R2>(
   f: Fx<E1, R1>,
   effects: E,
   handler: {
     initially?: Fx<SE, S>,
     handle: (e: Type<E>, s: S) => Fx<E2, Step<A, R2, S>>
-    return?: (r: R1 | R2, s: S) => R
     finally?: (s: S) => Fx<FE, void>
-  }): Fx<SE | Exclude<E1, Type<E>> | E2 | FE, R1 | R2 | R> {
+  }): Fx<SE | Exclude<E1, Type<E>> | E2 | FE, R1 | R2 | readonly [R1 | R2, S]> {
     const i = f[Symbol.iterator]()
     let s
     try {
@@ -96,7 +63,7 @@ export function* control<const E1, const R1, const E extends Effects, const SE, 
           const hr: Step<A, R1 | R2, S> = yield* handler.handle((ir.value), s as never)
           switch (hr.tag) {
             case 'return':
-              return handler.return ? handler.return(hr.value, s as never) : hr.value
+              return handler.initially ? [ir.value, s as S] : ir.value
             case 'resume':
               s = hr.state
               ir = i.next(hr.value)
@@ -107,30 +74,13 @@ export function* control<const E1, const R1, const E extends Effects, const SE, 
           ir = i.next(yield ir.value as any)
       }
 
-      return handler.return ? handler.return(ir.value, s as never) : ir.value
+      return handler.initially ? [ir.value, s as S] : ir.value
     } finally {
       if (i.return) i.return()
       if(handler.finally) yield* handler.finally(s as never)
     }
   }
 
-export function handle<const E1, const R1, const E extends Effects, const SE, const FE, const S, const A, const E2, const R>(
-  f: Fx<E1, R1>,
-  effects: E,
-  handler: {
-    initially: Fx<SE, S>,
-    handle: (e: Type<E>, s: S) => Fx<E2, Resume<A, S>>
-    return: (r: R1, s: S) => R
-    finally: (s: S) => Fx<FE, void>
-  }): Fx<SE | Exclude<E1, Type<E>> | E2 | FE, R>
-export function handle<const E1, const R1, const E extends Effects, const FE, const A, const E2, const R>(
-  f: Fx<E1, R1>,
-  effects: E,
-  handler: {
-    handle: (e: Type<E>) => Fx<E2, Resume<A>>
-    return: (r: R1) => R
-    finally: () => Fx<FE, void>
-  }): Fx<Exclude<E1, Type<E>> | E2 | FE, R>
 export function handle<const E1, const R1, const E extends Effects, const SE, const FE, const S, const A, const E2>(
   f: Fx<E1, R1>,
   effects: E,
@@ -139,28 +89,6 @@ export function handle<const E1, const R1, const E extends Effects, const SE, co
     handle: (e: Type<E>, s: S) => Fx<E2, Resume<A, S>>
     finally: (s: S) => Fx<FE, void>
   }): Fx<SE | Exclude<E1, Type<E>> | E2 | FE, R1>
-export function handle<const E1, const R1, const E extends Effects, const SE, const S, const A, const E2, const R>(
-  f: Fx<E1, R1>,
-  effects: E,
-  handler: {
-    initially: Fx<SE, S>,
-    handle: (e: Type<E>, s: S) => Fx<E2, Resume<A, S>>
-    return: (r: R1, s: S) => R
-  }): Fx<SE | Exclude<E1, Type<E>> | E2, R>
-export function handle<const E1, const R1, const E extends Effects, const A, const E2, const R>(
-  f: Fx<E1, R1>,
-  effects: E,
-  handler: {
-    handle: (e: Type<E>) => Fx<E2, Resume<A>>
-    return: (r: R1) => R
-  }): Fx<Exclude<E1, Type<E>> | E2, R>
-export function handle<const E1, const R1, const SE, const E extends Effects, const S, const A, const E2>(
-  f: Fx<E1, R1>,
-  effects: E,
-  handler: {
-    initially: Fx<SE, S>,
-    handle: (e: Type<E>, s: S) => Fx<E2, Resume<A, S>>
-  }): Fx<SE | Exclude<E1, Type<E>> | E2, R1>
 export function handle<const E1, const R1, const E extends Effects, const FE, const A, const E2>(
   f: Fx<E1, R1>,
   effects: E,
@@ -168,21 +96,27 @@ export function handle<const E1, const R1, const E extends Effects, const FE, co
     handle: (e: Type<E>) => Fx<E2, Resume<A>>
     finally: () => Fx<FE, void>
   }): Fx<Exclude<E1, Type<E>> | E2 | FE, R1>
+export function handle<const E1, const R1, const E extends Effects, const SE, const S, const A, const E2>(
+  f: Fx<E1, R1>,
+  effects: E,
+  handler: {
+    initially: Fx<SE, S>,
+    handle: (e: Type<E>, s: S) => Fx<E2, Resume<A, S>>
+  }): Fx<SE | Exclude<E1, Type<E>> | E2, readonly [R1, S]>
 export function handle<const E1, const R1, const E extends Effects, const A, const E2>(
   f: Fx<E1, R1>,
   effects: E,
   handler: {
     handle: (e: Type<E>) => Fx<E2, Resume<A>>
   }): Fx<Exclude<E1, Type<E>> | E2, R1>
-export function* handle<const E1, const R1, const E extends Effects, const SE, const FE, const S, const A, const E2, const R>(
+export function* handle<const E1, const R1, const E extends Effects, const SE, const FE, const S, const A, const E2>(
   f: Fx<E1, R1>,
   effects: E,
   handler: {
     initially?: Fx<SE, S>,
     handle: (e: Type<E>, s: S) => Fx<E2, Resume<A, S>>
-    return?: (r: R1, s: S) => R
     finally?: (s: S) => Fx<FE, void>
-  }): Fx<SE | Exclude<E1, Type<E>> | E2 | FE, R1 | R> {
+  }): Fx<SE | Exclude<E1, Type<E>> | E2 | FE, R1 | readonly [R1, S]> {
   const i = f[Symbol.iterator]()
   let s
 
@@ -202,7 +136,7 @@ export function* handle<const E1, const R1, const E extends Effects, const SE, c
         ir = i.next(yield ir.value as any)
     }
 
-    return handler.return ? handler.return(ir.value, s as never) : ir.value
+    return handler.initially ? [ir.value, s as S] : ir.value
   } finally {
     if (i.return) i.return()
     if (handler.finally) yield* handler.finally(s as never)
