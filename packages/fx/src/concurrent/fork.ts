@@ -1,72 +1,12 @@
 import { Async } from '../async'
-import { Context, getContext, setContext } from '../context'
-import { Effect, Fx, is, ok } from '../fx'
-import { handle, resume } from '../handler'
+import { Context } from '../context'
+import { Effect, Fx } from '../fx'
 
 import { Process } from './process'
 
-export class Fork extends Effect('Fork')<Fx<unknown, unknown>, Process<unknown>> { }
-
-export const fork = <const E, const A>(fx: Fx<E, A>) => new Fork(fx).send() as Fx<Exclude<E, Async> | Fork, Process<A>>
-
-export const unbounded = <const E, const A>(f: Fx<E, A>) => handle(f, { Fork }, {
-  handle: c => ok(resume(spawn(c.arg, [...getContext()])))
-})
-
-export const spawn = <const E, const A>(f: Fx<E, A>, context: Context[]): Process<A> => {
-  const processes = new ProcessSet()
-
-  const promise = new Promise<A>(async (resolve, reject) => {
-    const fc = withContext(context, f)
-    setContext(context)
-    const i2 = fc[Symbol.iterator]()
-    let ir2 = i2.next()
-    while (!ir2.done) {
-      if (is(Async, ir2.value)) {
-        const p = runProcess(ir2.value.arg)
-        processes.add(p)
-        const a = await p.promise.finally(() => processes.remove(p))
-        setContext(context)
-        ir2 = i2.next(a)
-      }
-      else if (is(Fork, ir2.value)) {
-        const p = spawn(ir2.value.arg, context)
-        processes.add(p)
-        p.promise.finally(() => processes.remove(p))
-        ir2 = i2.next(p)
-      }
-      else return reject(new Error(`Unexpected effect in forked Fx: ${JSON.stringify(ir2.value)}`))
-    }
-    resolve(ir2.value as A)
-  }).catch(e => (processes[Symbol.dispose](), Promise.reject(e)))
-
-  return new Process(promise, processes)
+export class Fork extends Effect('Fork')<Fx<unknown, unknown>, Process<unknown>> {
+  constructor(f: Fx<unknown, unknown>, public readonly context: readonly Context[]) { super(f) }
 }
 
-const runProcess = <A>(run: (s: AbortSignal) => Promise<A>) => {
-  const s = new AbortController()
-  return new Process<A>(run(s.signal), { [Symbol.dispose]() { s.abort() } })
-}
-
-const withContext = (c: Context[], f: Fx<unknown, unknown>) =>
-  c.reduceRight((f, c) => handle(f, c.effects, c.handler as any), f)
-
-class ProcessSet {
-  private disposed = false
-  private disposables = new Set<Disposable>()
-
-  add(disposable: Disposable) {
-    if (this.disposed) disposable[Symbol.dispose]()
-    else this.disposables.add(disposable)
-  }
-
-  remove(disposable: Disposable) {
-    this.disposables.delete(disposable)
-  }
-
-  [Symbol.dispose]() {
-    if (this.disposed) return
-    this.disposed = true
-    for (const d of this.disposables) d[Symbol.dispose]()
-  }
-}
+export const fork = <const E, const A>(f: Fx<E, A>) =>
+  new Fork(f, []).send() as Fx<Exclude<E, Async> | Fork, Process<A>>

@@ -1,5 +1,5 @@
-import { getContext, popContext, pushContext } from './context'
-import { EffectType, Fx } from './fx'
+import { Fork } from './concurrent/fork'
+import { EffectType, Fx, is } from './fx'
 
 export type Step<A, R, S> = Resume<A, S> | Return<R>
 export type Resume<A, S = void> = { tag: 'resume', value: A, state: S }
@@ -100,6 +100,7 @@ export function* control<const E1, const R1, const E extends Record<string, Effe
               break
           }
         }
+        else if (is(Fork, ir.value)) ir = i.next(yield ir.value as any)
         else ir = i.next(yield ir.value as any)
       }
 
@@ -180,8 +181,6 @@ export function* handle<const E1, const R1, const E extends Record<string, Effec
     finally?: (s: S) => Fx<FE, void>
   }): Fx<SE | Exclude<E1, InstanceType<E[keyof E]>> | E2 | FE, R1 | R> {
   const i = f[Symbol.iterator]()
-  pushContext({ effects, handler })
-  console.log('push context', getContext())
   let s
 
   try {
@@ -194,6 +193,7 @@ export function* handle<const E1, const R1, const E extends Record<string, Effec
         s = hr.state
         ir = i.next(hr.value)
       }
+      else if (is(Fork, ir.value)) ir = i.next(yield new Fork(ir.value.arg, [...ir.value.context, { effects, handler }]) as any)
       else ir = i.next(yield ir.value as any)
     }
 
@@ -201,7 +201,6 @@ export function* handle<const E1, const R1, const E extends Record<string, Effec
   } finally {
     if (i.return) i.return()
     if (handler.finally) yield* handler.finally(s as never)
-    popContext()
   }
 }
 
