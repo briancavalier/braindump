@@ -8,7 +8,7 @@ type AnyHandler = {
 }
 
 export type Context = {
-  effects: Record<PropertyKey, EffectType>
+  effects: readonly EffectType[]
   handler: AnyHandler
   state: unknown
 }

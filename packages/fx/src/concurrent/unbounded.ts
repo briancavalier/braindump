@@ -7,7 +7,7 @@ import { handle, resume } from '../handler'
 import { Fork } from './fork'
 import { Process } from './process'
 
-export const unbounded = <const E, const A>(f: Fx<E, A>) => handle(f, { Fork }, {
+export const unbounded = <const E, const A>(f: Fx<E, A>) => handle(f, [Fork], {
   handle: c => ok(resume(spawn(withContext(c.context, c.arg))))
 })
 

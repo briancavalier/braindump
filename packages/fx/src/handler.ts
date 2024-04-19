@@ -13,75 +13,78 @@ export function resume<const A, const S>(a: A, s?: S): Resume<A, void | S> {
 
 export const done = <const A>(a: A): Step<never, A, never> => ({ tag: 'return', value: a })
 
-export function control<const E1, const R1, const E extends Record<string, EffectType>, const SE, const FE, const S, const A, const E2, const R2, const R>(
+export type Effects = readonly EffectType[]
+export type Type<E extends Effects> = InstanceType<E[number]>
+
+export function control<const E1, const R1, const E extends Effects, const SE, const FE, const S, const A, const E2, const R2, const R>(
   f: Fx<E1, R1>,
   effects: E,
   handler: {
     initially: Fx<SE, S>,
-    handle: (e: InstanceType<E[keyof E]>, s: S) => Fx<E2, Step<A, R2, S>>
+    handle: (e: Type<E>, s: S) => Fx<E2, Step<A, R2, S>>
     return: (r: R1 | R2, s: S) => R
     finally: (s: S) => Fx<FE, void>
-  }): Fx<SE | Exclude<E1, InstanceType<E[keyof E]>> | E2 | FE, R>
-export function control<const E1, const R1, const E extends Record<string, EffectType>, const FE, const A, const E2, const R2, const R>(
+  }): Fx<SE | Exclude<E1, Type<E>> | E2 | FE, R>
+export function control<const E1, const R1, const E extends Effects, const FE, const A, const E2, const R2, const R>(
   f: Fx<E1, R1>,
   effects: E,
   handler: {
-    handle: (e: InstanceType<E[keyof E]>) => Fx<E2, Step<A, R2, void>>
+    handle: (e: Type<E>) => Fx<E2, Step<A, R2, void>>
     return: (r: R1 | R2) => R
     finally: () => Fx<FE, void>
-  }): Fx<Exclude<E1, InstanceType<E[keyof E]>> | E2 | FE, R>
-export function control<const E1, const R1, const E extends Record<string, EffectType>, const SE, const FE, const S, const A, const E2, const R2>(
+  }): Fx<Exclude<E1, Type<E>> | E2 | FE, R>
+export function control<const E1, const R1, const E extends Effects, const SE, const FE, const S, const A, const E2, const R2>(
   f: Fx<E1, R1>,
   effects: E,
   handler: {
     initially: Fx<SE, S>,
-    handle: (e: InstanceType<E[keyof E]>, s: S) => Fx<E2, Step<A, R2, S>>
+    handle: (e: Type<E>, s: S) => Fx<E2, Step<A, R2, S>>
     finally: (s: S) => Fx<FE, void>
-  }): Fx<SE | Exclude<E1, InstanceType<E[keyof E]>> | E2 | FE, R1 | R2>
-export function control<const E1, const R1, const E extends Record<string, EffectType>, const SE, const S, const A, const E2, const R2, const R>(
+  }): Fx<SE | Exclude<E1, Type<E>> | E2 | FE, R1 | R2>
+export function control<const E1, const R1, const E extends Effects, const SE, const S, const A, const E2, const R2, const R>(
   f: Fx<E1, R1>,
   effects: E,
   handler: {
     initially: Fx<SE, S>,
-    handle: (e: InstanceType<E[keyof E]>, s: S) => Fx<E2, Step<A, R2, S>>
+    handle: (e: Type<E>, s: S) => Fx<E2, Step<A, R2, S>>
     return: (r: R1 | R2, s: S) => R
-  }): Fx<SE | Exclude<E1, InstanceType<E[keyof E]>> | E2, R>
-export function control<const E1, const R1, const E extends Record<string, EffectType>, const A, const E2, const R2, const R>(
+  }): Fx<SE | Exclude<E1, Type<E>> | E2, R>
+export function control<const E1, const R1, const E extends Effects, const A, const E2, const R2, const R>(
   f: Fx<E1, R1>,
   effects: E,
   handler: {
-    handle: (e: InstanceType<E[keyof E]>) => Fx<E2, Step<A, R2, void>>
+    handle: (e: Type<E>) => Fx<E2, Step<A, R2, void>>
     return: (r: R1 | R2) => R
-  }): Fx<Exclude<E1, InstanceType<E[keyof E]>> | E2, R>
-export function control<const E1, const R1, const SE, const E extends Record<string, EffectType>, const S, const A, const E2, const R2>(
+  }): Fx<Exclude<E1, Type<E>> | E2, R>
+export function control<const E1, const R1, const SE, const E extends Effects, const S, const A, const E2, const R2>(
   f: Fx<E1, R1>,
   effects: E,
   handler: {
     initially: Fx<SE, S>,
-    handle: (e: InstanceType<E[keyof E]>, s: S) => Fx<E2, Step<A, R2, S>>
-  }): Fx<SE | Exclude<E1, InstanceType<E[keyof E]>> | E2, R1 | R2>
-export function control<const E1, const R1, const E extends Record<string, EffectType>, const FE, const A, const E2, const R2>(
+    handle: (e: Type<E>, s: S) => Fx<E2, Step<A, R2, S>>
+  }): Fx<SE | Exclude<E1, Type<E>> | E2, R1 | R2>
+export function control<const E1, const R1, const E extends Effects, const FE, const A, const E2, const R2>(
   f: Fx<E1, R1>,
   effects: E,
   handler: {
-    handle: (e: InstanceType<E[keyof E]>) => Fx<E2, Step<A, R2, void>>
+    handle: (e: Type<E>) => Fx<E2, Step<A, R2, void>>
     finally: () => Fx<FE, void>
-  }): Fx<Exclude<E1, InstanceType<E[keyof E]>> | E2 | FE, R1 | R2>
-export function control<const E1, const R1, const E extends Record<string, EffectType>, const A, const E2, const R2>(
+  }): Fx<Exclude<E1, Type<E>> | E2 | FE, R1 | R2>
+export function control<const E1, const R1, const E extends Effects, const A, const E2, const R2>(
   f: Fx<E1, R1>,
   effects: E,
   handler: {
-    handle: (e: InstanceType<E[keyof E]>) => Fx<E2, Step<A, R2, void>>
-  }): Fx<Exclude<E1, InstanceType<E[keyof E]>> | E2, R1 | R2>
-export function* control<const E1, const R1, const E extends Record<string, EffectType>, const SE, const FE, const S, const A, const E2, const R2, const R>(
+    handle: (e: Type<E>) => Fx<E2, Step<A, R2, void>>
+  }): Fx<Exclude<E1, Type<E>> | E2, R1 | R2>
+export function* control<const E1, const R1, const E extends Effects, const SE, const FE, const S, const A, const E2, const R2, const R>(
   f: Fx<E1, R1>,
   effects: E,
   handler: {
     initially?: Fx<SE, S>,
-    handle: (e: InstanceType<E[keyof E]>, s: S) => Fx<E2, Step<A, R2, S>>
+    handle: (e: Type<E>, s: S) => Fx<E2, Step<A, R2, S>>
     return?: (r: R1 | R2, s: S) => R
     finally?: (s: S) => Fx<FE, void>
-  }): Fx<SE | Exclude<E1, InstanceType<E[keyof E]>> | E2 | FE, R1 | R2 | R> {
+  }): Fx<SE | Exclude<E1, Type<E>> | E2 | FE, R1 | R2 | R> {
     const i = f[Symbol.iterator]()
     let s
     try {
@@ -111,75 +114,75 @@ export function* control<const E1, const R1, const E extends Record<string, Effe
     }
   }
 
-export function handle<const E1, const R1, const E extends Record<string, EffectType>, const SE, const FE, const S, const A, const E2, const R>(
+export function handle<const E1, const R1, const E extends Effects, const SE, const FE, const S, const A, const E2, const R>(
   f: Fx<E1, R1>,
   effects: E,
   handler: {
     initially: Fx<SE, S>,
-    handle: (e: InstanceType<E[keyof E]>, s: S) => Fx<E2, Resume<A, S>>
+    handle: (e: Type<E>, s: S) => Fx<E2, Resume<A, S>>
     return: (r: R1, s: S) => R
     finally: (s: S) => Fx<FE, void>
-  }): Fx<SE | Exclude<E1, InstanceType<E[keyof E]>> | E2 | FE, R>
-export function handle<const E1, const R1, const E extends Record<string, EffectType>, const FE, const A, const E2, const R>(
+  }): Fx<SE | Exclude<E1, Type<E>> | E2 | FE, R>
+export function handle<const E1, const R1, const E extends Effects, const FE, const A, const E2, const R>(
   f: Fx<E1, R1>,
   effects: E,
   handler: {
-    handle: (e: InstanceType<E[keyof E]>) => Fx<E2, Resume<A>>
+    handle: (e: Type<E>) => Fx<E2, Resume<A>>
     return: (r: R1) => R
     finally: () => Fx<FE, void>
-  }): Fx<Exclude<E1, InstanceType<E[keyof E]>> | E2 | FE, R>
-export function handle<const E1, const R1, const E extends Record<string, EffectType>, const SE, const FE, const S, const A, const E2>(
+  }): Fx<Exclude<E1, Type<E>> | E2 | FE, R>
+export function handle<const E1, const R1, const E extends Effects, const SE, const FE, const S, const A, const E2>(
   f: Fx<E1, R1>,
   effects: E,
   handler: {
     initially: Fx<SE, S>,
-    handle: (e: InstanceType<E[keyof E]>, s: S) => Fx<E2, Resume<A, S>>
+    handle: (e: Type<E>, s: S) => Fx<E2, Resume<A, S>>
     finally: (s: S) => Fx<FE, void>
-  }): Fx<SE | Exclude<E1, InstanceType<E[keyof E]>> | E2 | FE, R1>
-export function handle<const E1, const R1, const E extends Record<string, EffectType>, const SE, const S, const A, const E2, const R>(
+  }): Fx<SE | Exclude<E1, Type<E>> | E2 | FE, R1>
+export function handle<const E1, const R1, const E extends Effects, const SE, const S, const A, const E2, const R>(
   f: Fx<E1, R1>,
   effects: E,
   handler: {
     initially: Fx<SE, S>,
-    handle: (e: InstanceType<E[keyof E]>, s: S) => Fx<E2, Resume<A, S>>
+    handle: (e: Type<E>, s: S) => Fx<E2, Resume<A, S>>
     return: (r: R1, s: S) => R
-  }): Fx<SE | Exclude<E1, InstanceType<E[keyof E]>> | E2, R>
-export function handle<const E1, const R1, const E extends Record<string, EffectType>, const A, const E2, const R>(
+  }): Fx<SE | Exclude<E1, Type<E>> | E2, R>
+export function handle<const E1, const R1, const E extends Effects, const A, const E2, const R>(
   f: Fx<E1, R1>,
   effects: E,
   handler: {
-    handle: (e: InstanceType<E[keyof E]>) => Fx<E2, Resume<A>>
+    handle: (e: Type<E>) => Fx<E2, Resume<A>>
     return: (r: R1) => R
-  }): Fx<Exclude<E1, InstanceType<E[keyof E]>> | E2, R>
-export function handle<const E1, const R1, const SE, const E extends Record<string, EffectType>, const S, const A, const E2>(
+  }): Fx<Exclude<E1, Type<E>> | E2, R>
+export function handle<const E1, const R1, const SE, const E extends Effects, const S, const A, const E2>(
   f: Fx<E1, R1>,
   effects: E,
   handler: {
     initially: Fx<SE, S>,
-    handle: (e: InstanceType<E[keyof E]>, s: S) => Fx<E2, Resume<A, S>>
-  }): Fx<SE | Exclude<E1, InstanceType<E[keyof E]>> | E2, R1>
-export function handle<const E1, const R1, const E extends Record<string, EffectType>, const FE, const A, const E2>(
+    handle: (e: Type<E>, s: S) => Fx<E2, Resume<A, S>>
+  }): Fx<SE | Exclude<E1, Type<E>> | E2, R1>
+export function handle<const E1, const R1, const E extends Effects, const FE, const A, const E2>(
   f: Fx<E1, R1>,
   effects: E,
   handler: {
-    handle: (e: InstanceType<E[keyof E]>) => Fx<E2, Resume<A>>
+    handle: (e: Type<E>) => Fx<E2, Resume<A>>
     finally: () => Fx<FE, void>
-  }): Fx<Exclude<E1, InstanceType<E[keyof E]>> | E2 | FE, R1>
-export function handle<const E1, const R1, const E extends Record<string, EffectType>, const A, const E2>(
+  }): Fx<Exclude<E1, Type<E>> | E2 | FE, R1>
+export function handle<const E1, const R1, const E extends Effects, const A, const E2>(
   f: Fx<E1, R1>,
   effects: E,
   handler: {
-    handle: (e: InstanceType<E[keyof E]>) => Fx<E2, Resume<A>>
-  }): Fx<Exclude<E1, InstanceType<E[keyof E]>> | E2, R1>
-export function* handle<const E1, const R1, const E extends Record<string, EffectType>, const SE, const FE, const S, const A, const E2, const R>(
+    handle: (e: Type<E>) => Fx<E2, Resume<A>>
+  }): Fx<Exclude<E1, Type<E>> | E2, R1>
+export function* handle<const E1, const R1, const E extends Effects, const SE, const FE, const S, const A, const E2, const R>(
   f: Fx<E1, R1>,
   effects: E,
   handler: {
     initially?: Fx<SE, S>,
-    handle: (e: InstanceType<E[keyof E]>, s: S) => Fx<E2, Resume<A, S>>
+    handle: (e: Type<E>, s: S) => Fx<E2, Resume<A, S>>
     return?: (r: R1, s: S) => R
     finally?: (s: S) => Fx<FE, void>
-  }): Fx<SE | Exclude<E1, InstanceType<E[keyof E]>> | E2 | FE, R1 | R> {
+  }): Fx<SE | Exclude<E1, Type<E>> | E2 | FE, R1 | R> {
   const i = f[Symbol.iterator]()
   let s
 
@@ -206,5 +209,5 @@ export function* handle<const E1, const R1, const E extends Record<string, Effec
   }
 }
 
-const matches = <const T extends Record<string, EffectType>, const E>(t: T, e: E): e is Extract<InstanceType<T[keyof T]> , E> =>
-  (e as EffectType).tag as PropertyKey in t
+const matches = <const E extends Effects, const T>(e: E, t: T): t is Type<E> =>
+  e.some(effectType => (t as any).tag === effectType.tag)

@@ -18,11 +18,11 @@ const main = fx(function* () {
   }
 })
 
-const handlePrint = <const E, const A>(f: Fx<E, A>) => Handler.handle(f, {Print}, {
+const handlePrint = <const E, const A>(f: Fx<E, A>) => Handler.handle(f, [Print], {
   handle: print => ok(Handler.resume(console.log(print.arg)))
 })
 
-const handleRead = <const E, const A>(f: Fx<E, A>) => Handler.handle(f, {Read}, {
+const handleRead = <const E, const A>(f: Fx<E, A>) => Handler.handle(f, [Read], {
   initially: sync(() => createInterface({ input: process.stdin, output: process.stdout })),
   handle: (read, readline) => fx(function* () {
     const s = yield* Async.run((signal => readline.question(read.arg, { signal })))
@@ -36,13 +36,13 @@ const m = handleRead(handlePrint(main))
 
 Run.async(m).promise.then(console.log)
 
-// const handlePrintPure = <const E, const A>(f: Fx<E, A>) => Handler.handle(f, {Print}, {
+// const handlePrintPure = <const E, const A>(f: Fx<E, A>) => Handler.handle(f, [Print], {
 //   initially: ok([] as readonly string[]),
 //   handle: (print, s) => ok(Handler.resume(undefined, [...s, print.arg])),
 //   return: (_, s) => s
 // })
 
-// const handleReadPure = <const E, const A>(reads: readonly string[], f: Fx<E, A>) => Handler.handle(f, {Read}, {
+// const handleReadPure = <const E, const A>(reads: readonly string[], f: Fx<E, A>) => Handler.handle(f, [Read], {
 //   initially: ok(reads),
 //   handle: (_, [s, ...ss]) => ok(Handler.resume(s, ss))
 // })

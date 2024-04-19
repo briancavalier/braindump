@@ -17,11 +17,11 @@ export interface LogMessage {
   context?: Record<string, unknown> | undefined
 }
 
-export class Log extends Effect('Log')<LogMessage, void> {}
+export class Log extends Effect('fx/Log.Log')<LogMessage, void> {}
 
 const log = (m: LogMessage) => new Log(m).send()
 
-export const console = <const E, const A>(f: Fx<E, A>) => handle(f, { Log }, {
+export const console = <const E, const A>(f: Fx<E, A>) => handle(f, [Log], {
   *handle(e) {
     const t = yield* now
     const { level, msg, data, context } = e.arg
@@ -35,7 +35,7 @@ export const console = <const E, const A>(f: Fx<E, A>) => handle(f, { Log }, {
   }
 })
 
-export const collect = <const E, const A>(f: Fx<E, A>) => handle(f, { Log }, {
+export const collect = <const E, const A>(f: Fx<E, A>) => handle(f, [Log], {
   initially: ok([] as readonly Readonly<{ time: number, msg: LogMessage }>[]),
   *handle(e, l) {
     return resume(undefined, [...l, { time: yield* now, msg: e.arg }] as const)
@@ -45,13 +45,13 @@ export const collect = <const E, const A>(f: Fx<E, A>) => handle(f, { Log }, {
 
 export const silent = <const E, const A>(f: Fx<E, A>) => minLevel(f, Level.silent)
 
-export const minLevel = <const E, const A>(f: Fx<E, A>, min: Level) => handle(f, { Log }, {
+export const minLevel = <const E, const A>(f: Fx<E, A>, min: Level) => handle(f, [Log], {
   *handle(e) {
     return resume(e.arg.level >= min ? yield* e : undefined)
   }
 })
 
-export const context = <const E, const A>(f: Fx<E, A>, context?: Record<string, unknown>) => handle(f, { Log }, {
+export const context = <const E, const A>(f: Fx<E, A>, context?: Record<string, unknown>) => handle(f, [Log], {
   *handle(e) {
     return resume(yield* log({ ...e.arg, context: { ...e.arg.context, ...context } }))
   }

@@ -3,21 +3,21 @@ import { handle, resume } from './handler'
 
 // void | E allows the arg to be omitted while
 // still exposing E in the return type
-export class Env<E extends Record<PropertyKey, unknown>> extends Effect('Env')<void | E, E> { }
+export class Get<E extends Record<PropertyKey, unknown>> extends Effect('fx/Env.Get')<void | E, E> { }
 
 export const get = <const E extends Record<PropertyKey, unknown>>() =>
-  new Env<E>().send()
+  new Get<E>().send()
 
 type ExcludeEnv<E, S> =
-  E extends Env<Record<PropertyKey, unknown>>
+  E extends Get<Record<PropertyKey, unknown>>
     ? S extends E['R'] ? never
     : S extends Record<PropertyKey, unknown>
-      ? Env<{ readonly [K in keyof E['R'] as S[K] extends E['R'][K] ? never : K]: E['R'][K] }>
+      ? Get<{ readonly [K in keyof E['R'] as S[K] extends E['R'][K] ? never : K]: E['R'][K] }>
       : E
   : E
 
 export const provide = <const E, const A, const S extends Record<PropertyKey, unknown>>(s: S, f: Fx<E, A>) =>
-  handle(f, { Env }, {
+  handle(f, [Get], {
     initially: ok(s),
     *handle(_, s) {
       return resume({ ...(yield* get()), ...s }, s)
@@ -25,10 +25,10 @@ export const provide = <const E, const A, const S extends Record<PropertyKey, un
   }) as Fx<ExcludeEnv<E, S>, A>
 
 export type EnvOf<E> = U2I<EachEnv<E>>
-type EachEnv<E> = E extends Env<infer A> ? A : never
+type EachEnv<E> = E extends Get<infer A> ? A : never
 
 export const provideAll = <const E, const A, const S extends EnvOf<E> & Record<PropertyKey, unknown>>(s: S, f: Fx<E, A>) =>
-  handle(f, { Env }, {
+  handle(f, [Get], {
     initially: ok(s),
     handle: (_, s) => ok(resume(s, s))
   }) as Fx<ExcludeEnv<E, S>, A>

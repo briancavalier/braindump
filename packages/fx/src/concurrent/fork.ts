@@ -4,7 +4,7 @@ import { Effect, Fx } from '../fx'
 
 import { Process } from './process'
 
-export class Fork extends Effect('Fork')<Fx<unknown, unknown>, Process<unknown>> {
+export class Fork extends Effect('fx/Fork.Fork')<Fx<unknown, unknown>, Process<unknown>> {
   constructor(f: Fx<unknown, unknown>, public readonly context: readonly Context[]) { super(f) }
 }
 
