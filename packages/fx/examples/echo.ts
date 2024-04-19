@@ -31,21 +31,23 @@ const handleRead = <const E, const A>(f: Fx<E, A>) => Handler.handle(f, {Read}, 
   finally: readline => ok(readline.close())
 })
 
-const handlePrintPure = <const E, const A>(f: Fx<E, A>) => Handler.handle(f, {Print}, {
-  initially: ok([] as readonly string[]),
-  handle: (print, s) => ok(Handler.resume(undefined, [...s, print.arg])),
-  return: (_, s) => s
-})
-
-const handleReadPure = <const E, const A>(reads: readonly string[], f: Fx<E, A>) => Handler.handle(f, {Read}, {
-  initially: ok(reads),
-  handle: (_, [s, ...ss]) => ok(Handler.resume(s, ss))
-})
-
 // Run with "real" Read and Print effects
 const m = handleRead(handlePrint(main))
+
+Run.async(m).promise.then(console.log)
+
+// const handlePrintPure = <const E, const A>(f: Fx<E, A>) => Handler.handle(f, {Print}, {
+//   initially: ok([] as readonly string[]),
+//   handle: (print, s) => ok(Handler.resume(undefined, [...s, print.arg])),
+//   return: (_, s) => s
+// })
+
+// const handleReadPure = <const E, const A>(reads: readonly string[], f: Fx<E, A>) => Handler.handle(f, {Read}, {
+//   initially: ok(reads),
+//   handle: (_, [s, ...ss]) => ok(Handler.resume(s, ss))
+// })
 
 // Run with pure Read and Print effects that only collect input and output
 // const m = handlePrintPure(handleReadPure(['a', 'b', 'c'], main))
 
-Run.async(m).promise.then(console.log)
+// Run.async(m).promise.then(console.log)

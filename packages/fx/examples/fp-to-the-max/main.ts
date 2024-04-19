@@ -17,7 +17,10 @@ export class Read extends Effect('Read')<string, string> { }
 
 const read = (prompt: string) => new Read(prompt).send()
 
-export type Range = Readonly<{ min: number, max: number }>
+export type Range = {
+  readonly min: number,
+  readonly max: number
+}
 
 export class RandomInt extends Effect('RandomInt')<Range, number> { }
 
