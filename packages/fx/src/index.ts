@@ -9,3 +9,5 @@ export * as Handler from './handler'
 export * as Log from './log'
 export * as Run from './run'
 export * as Time from './time'
+
+export * from './pipe'

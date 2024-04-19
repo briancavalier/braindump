@@ -8,11 +8,9 @@ class Set<A> extends Effect('Set')<A, void> { }
 const get = <const A>() => new Get<A>().send()
 const set = <const A>(value: A) => new Set(value).send()
 
-// const withState = <const E, const A>(s: StateOf<E>, f: Fx<E, A>) => handleState(s, (a, s) => [a, s] as const, f)
-const runState = <const E, const A>(s: StateOf<E>, f: Fx<E, A>) => handleState(s, a => a, f)
-// const getState = <const E, const A>(s: StateOf<E>, f: Fx<E, A>) => handleState(s, (_, s) => s, f)
+const withState = <const E, const A>(s: StateOf<E>, f: Fx<E, A>) => handleState(s, f)
 
-const handleState = <const E, const A, const R, const S = StateOf<E>>(s: S, r: (a: A, s: S) => R, f: Fx<E, A>) =>
+const handleState = <const E, const A, const S = StateOf<E>>(s: S, f: Fx<E, A>) =>
   Handler.handle(f, [Get, Set], {
     initially: ok(s),
     // eslint-disable-next-line require-yield
@@ -21,9 +19,8 @@ const handleState = <const E, const A, const R, const S = StateOf<E>>(s: S, r: (
         case 'Get': return Handler.resume(s, s)
         case 'Set': return Handler.resume(undefined, gs.arg as S)
       }
-    },
-    return: r
-  }) as Fx<Exclude<E, Get<StateOf<E>> | Set<StateOf<E>>>, R>
+    }
+  }) as Fx<Exclude<E, Get<StateOf<E>> | Set<StateOf<E>>>, readonly [A, S]>
 
 type StateOf<E> = U2I<_StateOf<E>>
 type _StateOf<E> = U2I<E extends Get<infer S> | Set<infer S> ? S : never>
@@ -48,7 +45,7 @@ const main = fx(function* () {
 })
 
 // const m1 = withState(1, main)
-const m1 = runState(1, main)
+const m1 = withState(1, main)
 // const m1 = getState(1, main)
 
 Run.async(m1).promise.then(x => console.log(inspect(x, false, Infinity)))
