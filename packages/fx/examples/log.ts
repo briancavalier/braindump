@@ -1,4 +1,6 @@
-import { Log, Run, fx } from '../src'
+import { inspect } from 'node:util'
+
+import { Log, Run, Time, fx } from '../src'
 
 const f1 = fx(function* () {
   yield* Log.debug('this is debug', { debug: 123 })
@@ -13,7 +15,12 @@ const main = fx(function* () {
 })
 
 const m1 = Log.context(main, { propFromTopLevel: 'top-level' })
-const m2 = Log.console(m1)
 
-Run.async(m2)
-  .promise.then(x => globalThis.console.log(JSON.stringify(x)))
+// const m2 = Log.console(m1)
+const m2 = Log.collect(m1)
+
+const m3 = Time.builtinDate(m2)
+
+const result = Run.sync(m3)
+
+console.log(inspect(result, false, Infinity))

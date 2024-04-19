@@ -3,7 +3,7 @@ import { describe, it } from 'node:test'
 
 import { Env, Fx, Handler, Run, ok } from '../../src'
 
-import { Print, RandomInt, Read, main } from './main'
+import { Print, RandomInt, Read, checkAnswer, main } from './main'
 
 // -------------------------------------------------------------------
 // #region Handlers
@@ -30,8 +30,22 @@ const handleRandom = <const E, const A>(values: readonly number[], f: Fx<E, A>) 
 // #endregion
 // -------------------------------------------------------------------
 // #region Tests
-// Tests are pure, no async, no promises, no side effects.
 
+// The "usual" tests we'd write for a pure function
+describe('checkAnswer', () => {
+  it('should return true if the guess is correct', () => {
+    const x = Math.random()
+    assert.ok(checkAnswer(x, x))
+  })
+
+  it('should return false if the guess is incorrect', () => {
+    const x = Math.random()
+    assert.ok(!checkAnswer(x, x + 1))
+  })
+})
+
+// We can also test main
+// Tests are pure, no async, no promises, no side effects.
 describe('main', () => {
   it('should play the game', () => {
     const secretNumbers = [1, 2, 3, 4]

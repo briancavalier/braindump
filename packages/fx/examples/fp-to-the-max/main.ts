@@ -32,8 +32,22 @@ const nextInt = (range: Range) => new RandomInt(range).send()
 // The game
 
 // Core "business logic": evaluate the user's guess
-const checkAnswer = (secret: number, guess: number): boolean =>
+export const checkAnswer = (secret: number, guess: number): boolean =>
   secret === guess
+
+// Main game loop. Play round after round until the user chooses to quit
+export const main = fx(function* () {
+  const name = yield* read('What is your name? ')
+  yield* print(`Hello, ${name} welcome to the game!`)
+
+  const range = yield* Env.get<Range>()
+
+  do
+    yield* play(name, range)
+  while (yield* checkContinue(name))
+
+  yield* print(`Thanks for playing, ${name}.`)
+})
 
 // Play one round of the game.  Generate a number and ask the user
 // to guess it.
@@ -64,18 +78,4 @@ const checkContinue = (name: string) => fx(function* () {
       default: yield* print('Please enter y or n.')
     }
   }
-})
-
-// Main game loop. Play round after round until the user chooses to quit
-export const main = fx(function* () {
-  const name = yield* read('What is your name? ')
-  yield* print(`Hello, ${name} welcome to the game!`)
-
-  const range = yield* Env.get<Range>()
-
-  do
-    yield* play(name, range)
-  while (yield* checkContinue(name))
-
-  yield* print(`Thanks for playing, ${name}.`)
 })
