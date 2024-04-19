@@ -15,24 +15,24 @@ export const spawn = <const E, const A>(f: Fx<E, A>): Process<A> => {
   const processes = new ProcessSet()
 
   const promise = new Promise<A>(async (resolve, reject) => {
-    const i2 = f[Symbol.iterator]()
-    let ir2 = i2.next()
-    while (!ir2.done) {
-      if (is(Async, ir2.value)) {
-        const p = runProcess(ir2.value.arg)
+    const i = f[Symbol.iterator]()
+    let ir = i.next()
+    while (!ir.done) {
+      if (is(Async, ir.value)) {
+        const p = runProcess(ir.value.arg)
         processes.add(p)
         const a = await p.promise.finally(() => processes.remove(p))
-        ir2 = i2.next(a)
+        ir = i.next(a)
       }
-      else if (is(Fork, ir2.value)) {
-        const p = spawn(withContext(ir2.value.context, ir2.value.arg))
+      else if (is(Fork, ir.value)) {
+        const p = spawn(withContext(ir.value.context, ir.value.arg))
         processes.add(p)
         p.promise.finally(() => processes.remove(p))
-        ir2 = i2.next(p)
+        ir = i.next(p)
       }
-      else return reject(new Error(`Unexpected effect in forked Fx: ${JSON.stringify(ir2.value)}`))
+      else return reject(new Error(`Unexpected effect in forked Fx: ${JSON.stringify(ir.value)}`))
     }
-    resolve(ir2.value as A)
+    resolve(ir.value as A)
   }).catch(e => (processes[Symbol.dispose](), Promise.reject(e)))
 
   return new Process(promise, processes)
@@ -40,7 +40,7 @@ export const spawn = <const E, const A>(f: Fx<E, A>): Process<A> => {
 
 const runProcess = <A>(run: (s: AbortSignal) => Promise<A>) => {
   const s = new AbortController()
-  return new Process<A>(run(s.signal), { [Symbol.dispose]() { s.abort() } })
+  return new Process<A>(run(s.signal), new AbortControllerDisposable(s))
 }
 
 export const withContext = (c: readonly Context[], f: Fx<unknown, unknown>) =>
@@ -70,4 +70,9 @@ class ProcessSet {
     this.disposed = true
     for (const d of this.disposables) d[Symbol.dispose]()
   }
+}
+
+class AbortControllerDisposable {
+  constructor(private readonly controller: AbortController) { }
+  [Symbol.dispose]() { this.controller.abort() }
 }
