@@ -18,5 +18,8 @@
   },
   "keywords": [],
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "pure-rand": "^6.1.0"
+  }
 }
