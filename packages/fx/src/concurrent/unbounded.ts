@@ -16,45 +16,41 @@ export const scheduleUnbounded = <const E, const A>(f: Fx<E, A>): Process<A, Fai
   const scope = new Scope()
 
   const promise = new Promise<A>((resolve, reject) => {
-    const d = setImmediate(() => {
+    const d = setImmediate(async () => {
       scope.remove(d)
-      sp(scope, resolve, reject, f)
+
+      const i = f[Symbol.iterator]()
+      let ir = i.next()
+      while (!ir.done) {
+        if (is(Async, ir.value)) {
+          const p = runProcess(ir.value.arg)
+          scope.add(p)
+          const a = await p.promise
+            .finally(() => scope.remove(p))
+            .catch(reject)
+          // If the scope was disposed while we were waiting,
+          // stop running
+          if(scope.disposed) return
+          ir = i.next(a)
+        }
+        else if (is(Fork, ir.value)) {
+          const p = scheduleUnbounded(withContext(ir.value.context, ir.value.arg))
+          scope.add(p)
+          p.promise
+            .finally(() => scope.remove(p))
+            .catch(reject)
+          ir = i.next(p)
+        }
+        else if (is(Fail, ir.value)) return reject(ir.value.arg)
+        else return reject(new Error(`Unexpected effect in forked Fx: ${JSON.stringify(ir.value)}`))
+      }
+      resolve(ir.value as A)
     })
+
     scope.add(d)
   }).finally(() => scope[Symbol.dispose]())
 
   return new Process(promise, scope)
-}
-
-const sp = async <const E, const A>(
-  scope: Scope,
-  resolve: (a: A) => void,
-  reject: (e: unknown) => void,
-  f: Fx<E, A>
-) => {
-  const i = f[Symbol.iterator]()
-  let ir = i.next()
-  while (!ir.done) {
-    if (is(Async, ir.value)) {
-      const p = runProcess(ir.value.arg)
-      scope.add(p)
-      const a = await p.promise
-        .catch(reject)
-        .finally(() => scope.remove(p))
-      ir = i.next(a)
-    }
-    else if (is(Fork, ir.value)) {
-      const p = scheduleUnbounded(withContext(ir.value.context, ir.value.arg))
-      scope.add(p)
-      p.promise
-        .catch(reject)
-        .finally(() => scope.remove(p))
-      ir = i.next(p)
-    }
-    else if (is(Fail, ir.value)) return reject(ir.value.arg)
-    else return reject(new Error(`Unexpected effect in forked Fx: ${JSON.stringify(ir.value)}`))
-  }
-  resolve(ir.value as A)
 }
 
 const runProcess = <A>(run: (s: AbortSignal) => Promise<A>) => {
@@ -72,11 +68,11 @@ const withContext = (c: readonly Context[], f: Fx<unknown, unknown>) =>
   ), f)
 
 class Scope {
-  private disposed = false;
-  private disposables = new Set<Disposable>();
+  private _disposed = false;
+  private readonly disposables = new Set<Disposable>();
 
   add(disposable: Disposable) {
-    if (this.disposed) disposable[Symbol.dispose]()
+    if (this._disposed) disposable[Symbol.dispose]()
     else this.disposables.add(disposable)
   }
 
@@ -84,9 +80,11 @@ class Scope {
     this.disposables.delete(disposable)
   }
 
+  get disposed() { return this._disposed }
+
   [Symbol.dispose]() {
-    if (this.disposed) return
-    this.disposed = true
+    if (this._disposed) return
+    this._disposed = true
     for (const d of this.disposables) d[Symbol.dispose]()
   }
 }
