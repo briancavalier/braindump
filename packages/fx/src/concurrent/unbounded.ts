@@ -28,8 +28,7 @@ export const scheduleUnbounded = <const E, const A>(f: Fx<E, A>): Process<A, Fai
           const a = await p.promise
             .finally(() => scope.remove(p))
             .catch(reject)
-          // If the scope was disposed while we were waiting,
-          // stop running
+          // stop if the scope was disposed while we were waiting
           if(scope.disposed) return
           ir = i.next(a)
         }
