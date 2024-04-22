@@ -18,10 +18,7 @@ type Errors<P> = P extends Process<unknown, infer E> ? E : never
 export const all = <Processes extends readonly Process<unknown, unknown>[]>(...processes: Processes) => {
   const dispose = new DisposeAll(processes)
   return new Process(
-    Promise.all(processes.map(p => p.promise)).finally(() => {
-      console.log('all finally')
-      dispose[Symbol.dispose]()
-    }),
+    Promise.all(processes.map(p => p.promise)).finally(() => dispose[Symbol.dispose]()),
     dispose
   ) as Process<{ readonly [K in keyof Processes]: Result<Processes[K]> }, Errors<Processes[number]>>
 }

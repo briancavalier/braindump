@@ -9,15 +9,16 @@ import { Fork } from './fork'
 import { Process } from './process'
 
 export const unbounded = <const E, const A>(f: Fx<E, A>) => handle(f, [Fork], {
-  handle: c => ok(resume(scheduleUnbounded(withContext(c.context, c.arg))))
+  handle: c => ok(resume(scheduleUnbounded(withContext(c.context, c.arg), new Semaphore(Infinity))))
 })
 
-export const scheduleUnbounded = <const E, const A>(f: Fx<E, A>): Process<A, Failures<E>> => {
+export const scheduleUnbounded = <const E, const A>(f: Fx<E, A>, s: Semaphore): Process<A, Failures<E>> => {
   const scope = new Scope()
 
-  const promise = new Promise<A>((resolve, reject) => {
+  const promise = new Promise<A>(async (resolve, reject) => {
     const d = setImmediate(async () => {
       scope.remove(d)
+      if (scope.disposed) return
 
       const i = f[Symbol.iterator]()
       let ir = i.next()
@@ -33,10 +34,14 @@ export const scheduleUnbounded = <const E, const A>(f: Fx<E, A>): Process<A, Fai
           ir = i.next(a)
         }
         else if (is(Fork, ir.value)) {
-          const p = scheduleUnbounded(withContext(ir.value.context, ir.value.arg))
+          await s.acquire()
+          const p = scheduleUnbounded(withContext(ir.value.context, ir.value.arg), s)
           scope.add(p)
           p.promise
-            .finally(() => scope.remove(p))
+            .finally(() => {
+              scope.remove(p)
+              s.release()
+            })
             .catch(reject)
           ir = i.next(p)
         }
@@ -91,4 +96,22 @@ class Scope {
 class AbortControllerDisposable {
   constructor(private readonly controller: AbortController) { }
   [Symbol.dispose]() { this.controller.abort() }
+}
+
+export class Semaphore {
+  private waiters: (() => void)[] = []
+  constructor(private available: number) {}
+
+  acquire() {
+    if(this.available > 0) {
+      this.available--
+      return Promise.resolve()
+    }
+    return new Promise<void>(resolve => this.waiters.push(resolve))
+  }
+
+  release() {
+    if(this.waiters.length) this.waiters.shift()!()
+    else this.available++
+  }
 }
