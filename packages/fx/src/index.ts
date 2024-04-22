@@ -1,7 +1,7 @@
 export * from './fx'
 
 export * as Async from './async'
-export * as Fork from './concurrent/fork'
+export * as Fork from './concurrent'
 export * as Process from './concurrent/process'
 export * as Env from './env'
 export * as Fail from './fail'

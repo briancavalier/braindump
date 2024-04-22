@@ -7,52 +7,52 @@ import { handle, resume } from '../handler'
 
 import { Fork } from './fork'
 import { Process } from './process'
+import { Scope } from './scope'
+import { Semaphore } from './semaphore'
 
-export const unbounded = <const E, const A>(f: Fx<E, A>) => handle(f, [Fork], {
-  handle: c => ok(resume(scheduleUnbounded(withContext(c.context, c.arg), new Semaphore(Infinity))))
-})
+export const unbounded = <const E, const A>(f: Fx<E, A>) =>
+  bounded(f, Infinity)
 
-export const scheduleUnbounded = <const E, const A>(f: Fx<E, A>, s: Semaphore): Process<A, Failures<E>> => {
+export const bounded = <const E, const A>(f: Fx<E, A>, maxConcurrency: number) =>
+  handle(f, [Fork], {
+    initially: ok(new Semaphore(maxConcurrency)),
+    handle: (f, s) => ok(resume(schedule(withContext(f.context, f.arg), s), s))
+  })
+
+export const schedule = <const E, const A>(f: Fx<E, A>, s: Semaphore): Process<A, Failures<E>> => {
   const scope = new Scope()
 
-  const promise = new Promise<A>(async (resolve, reject) => {
-    const d = setImmediate(async () => {
-      scope.remove(d)
-      if (scope.disposed) return
-
-      const i = f[Symbol.iterator]()
-      let ir = i.next()
-      while (!ir.done) {
-        if (is(Async, ir.value)) {
-          const p = runProcess(ir.value.arg)
-          scope.add(p)
-          const a = await p.promise
-            .finally(() => scope.remove(p))
-            .catch(reject)
-          // stop if the scope was disposed while we were waiting
-          if(scope.disposed) return
-          ir = i.next(a)
-        }
-        else if (is(Fork, ir.value)) {
-          await s.acquire()
-          const p = scheduleUnbounded(withContext(ir.value.context, ir.value.arg), s)
-          scope.add(p)
-          p.promise
-            .finally(() => {
-              scope.remove(p)
-              s.release()
-            })
-            .catch(reject)
-          ir = i.next(p)
-        }
-        else if (is(Fail, ir.value)) return reject(ir.value.arg)
-        else return reject(new Error(`Unexpected effect in forked Fx: ${JSON.stringify(ir.value)}`))
+  // TODO: Need a way to dispose the acquisition
+  const promise = s.acquire().then(() => new Promise<A>(async (resolve, reject) => {
+    const i = f[Symbol.iterator]()
+    let ir = i.next()
+    while (!ir.done) {
+      if (is(Async, ir.value)) {
+        const p = runProcess(ir.value.arg)
+        scope.add(p)
+        const a = await p.promise
+          .finally(() => scope.remove(p))
+          .catch(reject)
+        // stop if the scope was disposed while we were waiting
+        if(scope.disposed) return
+        ir = i.next(a)
       }
-      resolve(ir.value as A)
-    })
-
-    scope.add(d)
-  }).finally(() => scope[Symbol.dispose]())
+      else if (is(Fork, ir.value)) {
+        const p = schedule(withContext(ir.value.context, ir.value.arg), s)
+        scope.add(p)
+        p.promise
+          .finally(() => scope.remove(p))
+          .catch(reject)
+        ir = i.next(p)
+      }
+      else if (is(Fail, ir.value)) return reject(ir.value.arg)
+      else return reject(new Error(`Unexpected effect in forked Fx: ${JSON.stringify(ir.value)}`))
+    }
+    resolve(ir.value as A)
+  })).finally(() => {
+    scope[Symbol.dispose]()
+    s.release()
+  })
 
   return new Process(promise, scope)
 }
@@ -71,47 +71,7 @@ const withContext = (c: readonly Context[], f: Fx<unknown, unknown>) =>
       : c.handler as any
   ), f)
 
-class Scope {
-  private _disposed = false;
-  private readonly disposables = new Set<Disposable>();
-
-  add(disposable: Disposable) {
-    if (this._disposed) disposable[Symbol.dispose]()
-    else this.disposables.add(disposable)
-  }
-
-  remove(disposable: Disposable) {
-    this.disposables.delete(disposable)
-  }
-
-  get disposed() { return this._disposed }
-
-  [Symbol.dispose]() {
-    if (this._disposed) return
-    this._disposed = true
-    for (const d of this.disposables) d[Symbol.dispose]()
-  }
-}
-
 class AbortControllerDisposable {
   constructor(private readonly controller: AbortController) { }
   [Symbol.dispose]() { this.controller.abort() }
-}
-
-export class Semaphore {
-  private waiters: (() => void)[] = []
-  constructor(private available: number) {}
-
-  acquire() {
-    if(this.available > 0) {
-      this.available--
-      return Promise.resolve()
-    }
-    return new Promise<void>(resolve => this.waiters.push(resolve))
-  }
-
-  release() {
-    if(this.waiters.length) this.waiters.shift()!()
-    else this.available++
-  }
 }
