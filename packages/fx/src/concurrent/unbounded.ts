@@ -22,7 +22,6 @@ export const bounded = <const E, const A>(f: Fx<E, A>, maxConcurrency: number) =
 export const schedule = <const E, const A>(f: Fx<E, A>, s: Semaphore): Process<A, Failures<E>> => {
   const scope = new Scope()
 
-  // TODO: Need a way to dispose the acquisition
   const promise = acquire(s, scope, () => new Promise<A>(async (resolve, reject) => {
     const i = f[Symbol.iterator]()
     let ir = i.next()
