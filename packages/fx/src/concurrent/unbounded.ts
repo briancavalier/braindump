@@ -8,7 +8,7 @@ import { handle, resume } from '../handler'
 import { Fork } from './fork'
 import { Process } from './process'
 import { Scope } from './scope'
-import { Semaphore } from './semaphore'
+import { Semaphore, acquire } from './semaphore'
 
 export const unbounded = <const E, const A>(f: Fx<E, A>) =>
   bounded(f, Infinity)
@@ -23,7 +23,7 @@ export const schedule = <const E, const A>(f: Fx<E, A>, s: Semaphore): Process<A
   const scope = new Scope()
 
   // TODO: Need a way to dispose the acquisition
-  const promise = s.acquire().then(() => new Promise<A>(async (resolve, reject) => {
+  const promise = acquire(s, scope, () => new Promise<A>(async (resolve, reject) => {
     const i = f[Symbol.iterator]()
     let ir = i.next()
     while (!ir.done) {
@@ -49,10 +49,7 @@ export const schedule = <const E, const A>(f: Fx<E, A>, s: Semaphore): Process<A
       else return reject(new Error(`Unexpected effect in forked Fx: ${JSON.stringify(ir.value)}`))
     }
     resolve(ir.value as A)
-  })).finally(() => {
-    scope[Symbol.dispose]()
-    s.release()
-  })
+  }).finally(() => scope[Symbol.dispose]()))
 
   return new Process(promise, scope)
 }
