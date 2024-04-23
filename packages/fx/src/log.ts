@@ -47,7 +47,7 @@ export const silent = <const E, const A>(f: Fx<E, A>) => minLevel(f, Level.silen
 
 export const minLevel = <const E, const A>(f: Fx<E, A>, min: Level) => handle(f, [Log], {
   *handle(e) {
-    return resume(e.arg.level >= min ? yield* e : undefined)
+    return resume(e.arg.level >= min ? yield* log(e.arg) : undefined)
   }
 })
 
