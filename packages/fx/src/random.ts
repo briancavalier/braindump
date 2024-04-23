@@ -33,12 +33,15 @@ const _xoroshiro128plus = <const E, const A>(prng: RandomGenerator, f: Fx<E, A>)
   handle(e, prng) {
     switch (e.tag) {
       case 'fx/Random.Float': {
-        const a = prand.unsafeUniformIntDistribution(0, (1 << 26) - 1, prng)
-        const b = prand.unsafeUniformIntDistribution(0, (1 << 27) - 1, prng)
-        return ok(resume((a * DBL_FACTOR + b) * DBL_DIVISOR, prng));
+        const p = prng.clone()
+        const a = prand.unsafeUniformIntDistribution(0, (1 << 26) - 1, p)
+        const b = prand.unsafeUniformIntDistribution(0, (1 << 27) - 1, p)
+        return ok(resume((a * DBL_FACTOR + b) * DBL_DIVISOR, p))
       }
-      case 'fx/Random.Int':
-        return ok(resume(prand.unsafeUniformIntDistribution(e.arg.min, e.arg.max, prng), prng))
+      case 'fx/Random.Int': {
+        const p = prng.clone()
+        return ok(resume(prand.unsafeUniformIntDistribution(e.arg.min, e.arg.max, p), p))
+      }
       case 'fx/Random.Split': {
         const p2 = prng.jump!()
         return ok(resume(_xoroshiro128plus(p2, e.arg), p2.jump!()))
