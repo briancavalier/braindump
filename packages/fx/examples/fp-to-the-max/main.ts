@@ -51,7 +51,7 @@ export const main = fx(function* () {
 
 // Play one round of the game.  Generate a number and ask the user
 // to guess it.
-const play = (name: string, range: Range) => fx(function* () {
+export const play = (name: string, range: Range) => fx(function* () {
   // It doesn't actually matter whether we generate the number before
   // or after the user guesses, but we'll do it here
   const secret = yield* nextInt(range)
@@ -69,8 +69,8 @@ const play = (name: string, range: Range) => fx(function* () {
 
 // Ask the user if they want to play again.
 // Note that we keep asking until the user gives an answer we recognize
-const checkContinue = (name: string) => fx(function* () {
-  while(true) {
+export const checkContinue = (name: string) => fx(function* () {
+  for (;;) {
     const answer = yield* read(`Do you want to continue, ${name}? (y/n) `)
     switch (answer.trim().toLowerCase()) {
       case 'y': return true

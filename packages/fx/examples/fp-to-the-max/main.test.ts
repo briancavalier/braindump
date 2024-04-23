@@ -3,7 +3,7 @@ import { describe, it } from 'node:test'
 
 import { Env, Fx, Handler, Run, ok } from '../../src'
 
-import { Print, RandomInt, Read, checkAnswer, main } from './main'
+import { Print, RandomInt, Read, checkAnswer, checkContinue, main } from './main'
 
 // -------------------------------------------------------------------
 // #region Handlers
@@ -13,7 +13,7 @@ import { Print, RandomInt, Read, checkAnswer, main } from './main'
 const handlePrint = <const E, const A>(f: Fx<E, A>) => Handler.handle(f, [Print], {
   initially: ok([] as readonly string[]),
   handle: (print, s) => ok(Handler.resume(undefined, [...s, print.arg])),
-  return: (_, s) => s
+  return: (r, s) => [r, s]
 })
 
 const handleRead = <const E, const A>(responses: readonly string[], f: Fx<E, A>) => Handler.handle(f, [Read], {
@@ -54,14 +54,14 @@ describe('main', () => {
       max: Math.max(...secretNumbers)
     }
 
-    const result = Run.sync(
+    const [, printed] = Run.sync(
       Env.provideAll(range,
         handlePrint(
           handleRead(['Brian', '1', 'y', '2', 'y', '3', 'y', '1', 'n'],
             handleRandom(secretNumbers, main)
           ))))
 
-    assert.deepEqual(result, [
+    assert.deepEqual(printed, [
       'Hello, Brian welcome to the game!',
       'You guessed right, Brian!',
       'You guessed right, Brian!',
@@ -69,6 +69,28 @@ describe('main', () => {
       'You guessed wrong, Brian! The number was: 4',
       'Thanks for playing, Brian.'
     ])
+  })
+})
+
+describe('checkContinue', () => {
+  it('given y, returns true', () => {
+    const p = handlePrint(
+      handleRead(['foo', 'bar', 'y'],
+        checkContinue('Brian')
+      ))
+
+    const [result] = Run.sync(p)
+    assert.ok(result)
+  })
+
+  it('given unexpected input followed by n, returns false', () => {
+    const p = handlePrint(
+      handleRead(['foo', 'bar', 'n'],
+        checkContinue('Brian')
+      ))
+
+    const [result] = Run.sync(p)
+    assert.ok(!result)
   })
 })
 
