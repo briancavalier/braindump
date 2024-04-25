@@ -7,7 +7,7 @@ type AnyHandler = {
   finally?: (s: any) => FxIterable<unknown, unknown>
 }
 
-export type Context = {
+export type HandlerContext = {
   effects: readonly EffectType[]
   handler: AnyHandler
   state: unknown

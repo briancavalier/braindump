@@ -1,10 +1,9 @@
-import { Scope } from './scope'
 
 export class Semaphore {
   private waiters: (() => void)[] = [];
   constructor(private available: number) { }
 
-  acquire() {
+  acquire(): Acquiring {
     if (this.available > 0) {
       this.available--
       return acquired()
@@ -13,27 +12,23 @@ export class Semaphore {
     return acquiring(this.waiters)
   }
 
-  release() {
+  release(): void {
     if (this.waiters.length) this.waiters.shift()!()
     else this.available++
   }
 }
 
-export const acquire = <A>(s: Semaphore, scope: Scope, f: () => Promise<A>) => {
-  const a = s.acquire()
-  scope.add(a)
-  return a.promise.then(f).finally(() => {
-    scope.remove(a)
-    s.release()
-  })
+interface Acquiring {
+  promise: Promise<void>,
+  [Symbol.dispose](): void
 }
 
-const acquired = () => ({
+const acquired = (): Acquiring => ({
   promise: Promise.resolve(),
   [Symbol.dispose]() { }
 })
 
-const acquiring = (waiters: (() => void)[]) => {
+const acquiring = (waiters: (() => void)[]): Acquiring => {
   let resolve: () => void
   return {
     promise: new Promise<void>(r => {
