@@ -1,8 +1,8 @@
-import { Async } from './async'
-import { Fork, schedule } from './concurrent/fork'
-import { Process } from './concurrent/process'
-import { Semaphore } from './concurrent/semaphore'
-import { provideAll } from './env'
+import { Async } from './effects/async'
+import { provideAll } from './effects/env'
+import { Fork, schedule } from './effects/fork/fork'
+import { Process } from './effects/fork/process'
+import { Semaphore } from './effects/fork/semaphore'
 import { Fx } from './fx'
 
 export const async = <const R>(f: Fx<Fork | Async, R>): Process<R, never> =>

@@ -1,7 +1,8 @@
-import { Process } from './concurrent/process'
+import { Effect, Fx, fx, ok } from '../fx'
+
 // eslint-disable-next-line import/no-cycle
 import { fail, type Fail } from './fail'
-import { Effect, Fx, fx, ok } from './fx'
+import { Process } from './fork/process'
 
 type Run<A> = (abort: AbortSignal) => Promise<A>
 

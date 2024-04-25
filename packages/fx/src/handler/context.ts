@@ -1,4 +1,4 @@
-import { EffectType, FxIterable } from './fx'
+import { EffectType, FxIterable } from '../fx'
 
 type AnyHandler = {
   initially?: FxIterable<unknown, unknown>

@@ -1,5 +1,6 @@
-import { Effect, Fx, fx, ok } from './fx'
-import { handle, resume } from './handler'
+import { Effect, Fx, fx, ok } from '../fx'
+import { handle, resume } from '../handler/handler'
+
 import { now } from './time'
 
 export enum Level {

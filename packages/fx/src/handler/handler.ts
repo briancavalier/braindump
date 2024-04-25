@@ -1,6 +1,6 @@
 // eslint-disable-next-line import/no-cycle
-import { Fork } from './concurrent/fork'
-import { EffectType, Fx, FxIterable, fx, is } from './fx'
+import { Fork } from '../effects/fork/fork'
+import { EffectType, Fx, FxIterable, fx, is } from '../fx'
 
 export type Step<A, R, S> = Resume<A, S> | Return<R>
 export type Resume<A, S = void> = { tag: 'resume', value: A, state: S }

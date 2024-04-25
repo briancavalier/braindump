@@ -1,9 +1,8 @@
-// eslint-disable-next-line import/no-cycle
+import { Effect, Fx, fx, is, ok } from '../../fx'
+import { HandlerContext } from '../../handler/context'
+import { handle, resume } from '../../handler/handler'
 import { Async } from '../async'
-import { HandlerContext } from '../context'
 import { Fail, Failures } from '../fail'
-import { Effect, Fx, fx, is, ok } from '../fx'
-import { handle, resume } from '../handler'
 
 import { Process, all as processAll, race as processRace } from './process'
 import { Scope } from './scope'

@@ -1,6 +1,5 @@
-import { Effect, Fx, fx, ok } from './fx'
-// eslint-disable-next-line import/no-cycle
-import { control, done, resume } from './handler'
+import { Effect, Fx, fx, ok } from '../fx'
+import { control, done, resume } from '../handler/handler'
 
 export class Fail<const E> extends Effect('fx/Fail.Fail')<E, never> { }
 

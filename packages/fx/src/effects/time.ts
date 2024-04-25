@@ -1,5 +1,5 @@
-import { Effect, Fx, ok } from './fx'
-import { handle, resume } from './handler'
+import { Effect, Fx, ok } from '../fx'
+import { handle, resume } from '../handler/handler'
 
 export class Now extends Effect('fx/Time.Now')<void, number> { }
 

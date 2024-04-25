@@ -1,11 +1,13 @@
 export * from './fx'
 
-export * as Async from './async'
-export * as Fork from './concurrent/fork'
-export * as Process from './concurrent/process'
-export * as Env from './env'
-export * as Fail from './fail'
-export * as Handler from './handler'
-export * as Log from './log'
+export * as Handler from './handler/handler'
 export * as Run from './run'
-export * as Time from './time'
+
+export * as Async from './effects/async'
+export * as Env from './effects/env'
+export * as Fail from './effects/fail'
+export * as Fork from './effects/fork/fork'
+export * as Log from './effects/log'
+export * as Time from './effects/time'
+
+export * as Process from './effects/fork/process'

@@ -2,8 +2,8 @@ import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 
 import { catchIf, fail } from './fail'
-import { fx, ok } from './fx'
-import { sync as runSync } from './run'
+import { fx, ok } from '../fx'
+import { sync as runSync } from '../run'
 
 describe('Fail', () => {
   describe('catchIf', () => {
