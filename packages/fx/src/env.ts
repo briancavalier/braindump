@@ -1,4 +1,4 @@
-import { Effect, Fx, ok } from './fx'
+import { Effect, Fx, fx, ok } from './fx'
 import { handle, resume } from './handler'
 
 // void | E allows the arg to be omitted while
@@ -16,21 +16,23 @@ type ExcludeEnv<E, S> =
       : E
   : E
 
-export const provide = <const E, const A, const S extends Record<PropertyKey, unknown>>(s: S, f: Fx<E, A>) =>
+export const provide = <const S extends Record<PropertyKey, unknown>>(s: S) => <const E, const A>(f: Fx<E, A>) =>
   handle(f, [Get], {
     initially: ok(s),
-    *handle(_, s) {
+    handle: (_, s) => fx(function* () {
       return resume({ ...(yield* get()), ...s }, s)
-    }
+    })
   }) as Fx<ExcludeEnv<E, S>, A>
 
 export type EnvOf<E> = U2I<EachEnv<E>>
 type EachEnv<E> = E extends Get<infer A> ? A : never
 
-export const provideAll = <const E, const A, const S extends EnvOf<E> & Record<PropertyKey, unknown>>(s: S, f: Fx<E, A>) =>
+export const provideAll = <const S extends Record<PropertyKey, unknown>>(s: S) => <const E, const A>(f: Fx<CheckEnv<S, E>, A>) =>
   handle(f, [Get], {
     initially: ok(s),
     handle: (_, s) => ok(resume(s, s))
   }) as Fx<ExcludeEnv<E, S>, A>
 
 type U2I<U> = (U extends any ? (k: U) => void : never) extends ((k: infer I) => void) ? I : never
+
+type CheckEnv<S, E> = E extends Get<infer A> ? S extends A ? E : { error: 'Missing Env', missing: { readonly [K in Exclude<keyof A, keyof S>]: A[K] } } : E

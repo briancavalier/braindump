@@ -1,4 +1,5 @@
 import { Process } from './concurrent/process'
+// eslint-disable-next-line import/no-cycle
 import { fail, type Fail } from './fail'
 import { Effect, Fx, fx, ok } from './fx'
 

@@ -11,16 +11,15 @@ const f1 = fx(function* () {
 
 const main = fx(function* () {
   // return yield* f1
-  return yield* Log.context(Log.minLevel(f1, Log.Level.info), { propFromParent: 'parent' })
+  return yield* f1.pipe(Log.context({ propFromParent: 'parent' }), Log.minLevel(Log.Level.info))
 })
 
-const m1 = Log.context(main, { propFromTopLevel: 'top-level' })
-
-// const m2 = Log.console(m1)
-const m2 = Log.collect(m1)
-
-const m3 = Time.builtinDate(m2)
-
-const result = Run.sync(m3)
+const result = main.pipe(
+  Log.context({ propFromTopLevel: 'top-level' }),
+  Log.collect,
+  // Log.console,
+  Time.builtinDate,
+  Run.sync
+)
 
 console.log(inspect(result, false, Infinity))

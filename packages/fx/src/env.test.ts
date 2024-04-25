@@ -5,19 +5,20 @@ import { get, provide, provideAll } from './env'
 import { fx } from './fx'
 import { sync as runSync } from './run'
 
+
 describe('Env', () => {
   describe('get', () => {
     it('given environment, returns requested items', () => {
       const f = get<{ x: number, y: string }>()
       const expected = { x: Math.random(), y: `${Math.random()}` }
-      const result = runSync(provideAll(expected, f))
+      const result = runSync(f.pipe(provideAll(expected)))
       assert.equal(result, expected)
     })
 
     it('given environment, returns requested item subset', () => {
       const f = get<{ x: number }>()
       const expected = Math.random()
-      const { x } = runSync(provideAll({ x: expected }, f))
+      const { x } = runSync(f.pipe(provideAll({ x: expected })))
       assert.equal(x, expected)
     })
 
@@ -31,7 +32,8 @@ describe('Env', () => {
       })
 
       const expected = { x: Math.random(), y: `${Math.random()}` }
-      const [xy, { x }, { y }] = runSync(provideAll(expected, f))
+      const f2 = f.pipe(provideAll(expected))
+      const [xy, { x }, { y }] = runSync(f2)
 
       assert.deepEqual(xy, { x, y })
     })
@@ -41,7 +43,7 @@ describe('Env', () => {
     it('given incomplete environment, is type error', () => {
       const f = get<{ x: number, y: string }>()
       // @ts-expect-error y is missing
-      provideAll({ x: 1 }, f)
+      f.pipe(provideAll({ x: 1 }))
     })
 
     it('given nested environment, returns nearest items', () => {
@@ -49,7 +51,7 @@ describe('Env', () => {
       const x = Math.random()
       const y = `${Math.random()}`
 
-      const result = runSync(provide({ x, y: '' }, provide({ y }, f)))
+      const result = runSync(f.pipe(provide({ y }), provide({ x, y: '' })))
 
       assert.equal(result.x, x)
       assert.equal(result.y, y)

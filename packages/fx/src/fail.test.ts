@@ -11,7 +11,7 @@ describe('Fail', () => {
       const expected = Math.random()
       const f = ok(expected)
 
-      const actual = runSync(catchIf((x): x is unknown => true, f))
+      const actual = runSync(f.pipe(catchIf((x): x is unknown => true)))
       assert.equal(actual, expected)
     })
 
@@ -23,7 +23,7 @@ describe('Fail', () => {
       })
 
       // @ts-expect-error failure is not handled
-      const result = runSync(catchIf((x): x is string => typeof x === 'string', f))
+      const result = runSync(f.pipe(catchIf((x): x is string => typeof x === 'string')))
       assert.notEqual(result, unexpected)
     })
 
@@ -36,7 +36,7 @@ describe('Fail', () => {
         return result
       })
 
-      const actual = runSync(catchIf((x): x is number => typeof x === 'number', f))
+      const actual = runSync(f.pipe(catchIf((x): x is number => typeof x === 'number')))
       assert.equal(actual, expected)
     })
   })

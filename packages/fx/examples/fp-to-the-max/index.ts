@@ -31,9 +31,10 @@ const handleRandom = <const E, const A>(f: Fx<E, A>) => Handler.handle(f, [Rando
 
 const { min = 1, max = 10 } = process.env
 
-Run.async(
-  Env.provideAll({ min: +min, max: +max },
-    handlePrint(
-      handleRead(
-        handleRandom(main)
-    ))))
+main.pipe(
+  Env.provide({ min: +min, max: +max }),
+  handleRandom,
+  handlePrint,
+  handleRead,
+  Run.async
+)

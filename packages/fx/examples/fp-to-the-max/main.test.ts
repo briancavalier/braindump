@@ -16,12 +16,12 @@ const handlePrint = <const E, const A>(f: Fx<E, A>) => Handler.handle(f, [Print]
   return: (_, s) => s
 })
 
-const handleRead = <const E, const A>(responses: readonly string[], f: Fx<E, A>) => Handler.handle(f, [Read], {
+const handleRead = (responses: readonly string[]) => <const E, const A>(f: Fx<E, A>) => Handler.handle(f, [Read], {
   initially: ok(responses),
   handle: (_, [s, ...ss]) => ok(Handler.resume(s, ss))
 })
 
-const handleRandom = <const E, const A>(values: readonly number[], f: Fx<E, A>) => Handler.handle(f, [RandomInt], {
+const handleRandom = (values: readonly number[]) => <const E, const A>(f: Fx<E, A>) => Handler.handle(f, [RandomInt], {
   initially: ok(values),
   handle: (e, [n, ...rest]) =>
     ok(Handler.resume(Math.max(e.arg.min, Math.min(e.arg.max, n)), [...rest, n]))
@@ -54,12 +54,13 @@ describe('main', () => {
       max: Math.max(...secretNumbers)
     }
 
-    const result = Run.sync(
-      Env.provideAll(range,
-        handlePrint(
-          handleRead(['Brian', '1', 'y', '2', 'y', '3', 'y', '1', 'n'],
-            handleRandom(secretNumbers, main)
-          ))))
+    const result = main.pipe(
+      handleRandom(secretNumbers),
+      handleRead(['Brian', '1', 'y', '2', 'y', '3', 'y', '1', 'n']),
+      handlePrint,
+      Env.provide(range),
+      Run.sync
+    )
 
     assert.deepEqual(result, [
       'Hello, Brian welcome to the game!',

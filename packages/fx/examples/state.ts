@@ -16,10 +16,10 @@ const handleState = <const E, const A, const R, const S = StateOf<E>>(s: S, r: (
   Handler.handle(f, [Get, Set], {
     initially: ok(s),
     // eslint-disable-next-line require-yield
-    *handle(gs, s) {
-      switch(gs.tag) {
-        case 'Get': return Handler.resume(s, s)
-        case 'Set': return Handler.resume(undefined, gs.arg as S)
+    handle(gs, s) {
+      switch(gs.id) {
+        case 'Get': return ok(Handler.resume(s, s))
+        case 'Set': return ok(Handler.resume(undefined, gs.arg as S))
       }
     },
     return: r

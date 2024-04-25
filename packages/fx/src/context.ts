@@ -1,10 +1,10 @@
-import { EffectType, Fx } from './fx'
+import { EffectType, FxIterable } from './fx'
 
 type AnyHandler = {
-  initially?: Fx<unknown, unknown>
-  handle: (e: any, s: any) => Fx<unknown, unknown>
+  initially?: FxIterable<unknown, unknown>
+  handle: (e: any, s: any) => FxIterable<unknown, unknown>
   return?: (r: any, s: any) => unknown
-  finally?: (s: any) => Fx<unknown, unknown>
+  finally?: (s: any) => FxIterable<unknown, unknown>
 }
 
 export type Context = {

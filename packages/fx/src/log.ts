@@ -1,4 +1,4 @@
-import { Effect, Fx, ok } from './fx'
+import { Effect, Fx, fx, ok } from './fx'
 import { handle, resume } from './handler'
 import { now } from './time'
 
@@ -22,7 +22,7 @@ export class Log extends Effect('fx/Log.Log')<LogMessage, void> {}
 const log = (m: LogMessage) => new Log(m).send()
 
 export const console = <const E, const A>(f: Fx<E, A>) => handle(f, [Log], {
-  *handle(e) {
+  handle: (e) => fx(function* () {
     const t = yield* now
     const { level, msg, data, context } = e.arg
     const c = globalThis.console
@@ -32,29 +32,29 @@ export const console = <const E, const A>(f: Fx<E, A>) => handle(f, [Log], {
       case Level.error: return resume(c.error(new Date(t), 'ERROR', msg, { ...data, ...context }))
       default: return resume(c.info(new Date(t), 'INFO ', msg, { ...data, ...context }))
     }
-  }
+  })
 })
 
 export const collect = <const E, const A>(f: Fx<E, A>) => handle(f, [Log], {
   initially: ok([] as readonly Readonly<{ time: number, msg: LogMessage }>[]),
-  *handle(e, l) {
+  handle: (e, l) => fx(function* () {
     return resume(undefined, [...l, { time: yield* now, msg: e.arg }] as const)
-  },
+  }),
   return: (r, l) => [r, l]
 })
 
-export const silent = <const E, const A>(f: Fx<E, A>) => minLevel(f, Level.silent)
-
-export const minLevel = <const E, const A>(f: Fx<E, A>, min: Level) => handle(f, [Log], {
-  *handle(e) {
+export const minLevel = (min: Level) => <const E, const A>(f: Fx<E, A>) => handle(f, [Log], {
+  handle: (e) => fx(function* () {
     return resume(e.arg.level >= min ? yield* e : undefined)
-  }
+  })
 })
 
-export const context = <const E, const A>(f: Fx<E, A>, context?: Record<string, unknown>) => handle(f, [Log], {
-  *handle(e) {
+export const silent = minLevel(Level.silent)
+
+export const context = (context: Record<string, unknown>) => <const E, const A>(f: Fx<E, A>) => handle(f, [Log], {
+  handle: (e) => fx(function* () {
     return resume(yield* log({ ...e.arg, context: { ...e.arg.context, ...context } }))
-  }
+  })
 })
 
 export const debug = (msg: string, data?: Record<string, unknown>) => log({ level: Level.debug, msg, data })
