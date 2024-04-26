@@ -1,10 +1,10 @@
 import { IncomingMessage, Server, ServerResponse, createServer } from 'http'
 
-import { Async, Effect, Env, Fail, Fork, Fx, Handler, Log, Run, Time, fx, ok, sync } from '../../src'
+import { Async, Effect, Env, Fail, Fork, Fx, Handler, Log, Run, Time, fx, ok } from '../../src'
 
 // ----------------------------------------------------------------------
 // #region Resource effect to acquire and release resources within a scope
-class Acquire<E> extends Effect('Resource/AcquireRelease')<Readonly<{ acquire: Fx<E, unknown>, release: (...a: any[]) => Fx<E, unknown> }>> {}
+class Acquire<E> extends Effect('Resource/Acquire')<Readonly<{ acquire: Fx<E, unknown>, release: (...a: any[]) => Fx<E, unknown> }>> {}
 
 const acquire = <const R, const E1, const E2>(acquire: Fx<E1, R>, release: (r: R) => Fx<E2, void>) =>
   new Acquire<E1 | E2>({ acquire, release }).send<R>()
@@ -39,7 +39,7 @@ const serve = <E, A>(
       const { port } = yield* Env.get<{ port: number }>()
       return createServer().listen(port)
     }),
-    (server) => sync(() => void server.close()),
+    (server) => ok(void server.close()),
     (server) => fx(function* () {
 
       let error: Error | undefined
