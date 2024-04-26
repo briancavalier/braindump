@@ -4,25 +4,30 @@ import { Async, Effect, Env, Fail, Fork, Fx, Handler, Log, Run, Time, fx, ok, sy
 
 // ----------------------------------------------------------------------
 // #region Resource effect to acquire and release resources within a scope
-class AcquireRelease<E> extends Effect('Resource/AcquireRelease')<Readonly<{ acquire: Fx<E, unknown>, release: (...a: any[]) => Fx<E, unknown> }>> {}
+class Acquire<E> extends Effect('Resource/AcquireRelease')<Readonly<{ acquire: Fx<E, unknown>, release: (...a: any[]) => Fx<E, unknown> }>> {}
 
-const acquireRelease = <const A, const E1, const E2>(acquire: Fx<E1, A>, release: (a: A) => Fx<E2, void>) =>
-  new AcquireRelease<E1 | E2>({ acquire, release }).send<A>()
+const acquire = <const R, const E1, const E2>(acquire: Fx<E1, R>, release: (r: R) => Fx<E2, void>) =>
+  new Acquire<E1 | E2>({ acquire, release }).send<R>()
+
+const bracket = <const A, const R, const E1, const E2, const E3>(acq: Fx<E1, R>, rel: (r: R) => Fx<E2, void>, use: (r: R) => Fx<E3, A>) =>
+  scope(fx(function* () {
+    return yield* use(yield* acquire(acq, rel))
+  }))
 
 // Handler to scope resource allocation/release
-const withResources = <const E, const A>(f: Fx<E, A>) => Handler.control(f, [AcquireRelease], {
-  initially: ok(new Map()),
+const scope = <const E, const A>(f: Fx<E, A>) => Handler.control(f, [Acquire], {
+  initially: ok([] as readonly Fx<unknown, unknown>[]),
   handle: (ar, resources) => fx(function* () {
     const { acquire, release } = ar.arg
     const a = yield* acquire
-    return Handler.resume(a, resources.set(a, release))
+    return Handler.resume(a, [release(a), ...resources])
   }),
   finally: resources => fx(function* () {
-    for (const [a, release] of resources) yield* release(a)
+    for (const release of resources) yield* release
   })
 }) as Fx<ExcludeResources<E>, A>
 
-type ExcludeResources<Effect> = Effect extends AcquireRelease<infer E> ? E : Effect
+type ExcludeResources<Effect> = Effect extends Acquire<infer E> ? E : Effect
 // #endregion
 
 // ----------------------------------------------------------------------
@@ -30,34 +35,30 @@ type ExcludeResources<Effect> = Effect extends AcquireRelease<infer E> ? E : Eff
 const serve = <E, A>(
   handle: (req: IncomingMessage, res: ServerResponse) => Fx<E, A>
 ) =>
-  fx(function* () {
-    const { port } = yield* Env.get<{ port: number }>()
+  bracket(fx(function* () {
+      const { port } = yield* Env.get<{ port: number }>()
+      return createServer().listen(port)
+    }),
+    (server) => sync(() => void server.close()),
+    (server) => fx(function* () {
 
-    // Create the server and ensure it's closed when the program ends
-    const server: Server = yield* acquireRelease(
-      ok(createServer().listen(port)),
-      (server) => {
-        console.log('shutdown')
-        return sync(() => void server.close())
+      let error: Error | undefined
+      server.once('error', e => error = e)
+
+      const close = () => server.close()
+
+      while (!error) {
+        const { request, response } = yield* Async.run((signal) => {
+          signal.addEventListener('abort', close)
+          return nextRequest(server)
+        })
+        if (error) break
+        yield* Fork.fork(handle(request, response))
       }
-    )
 
-    let error: Error | undefined
-    server.once('error', e => error = e)
-
-    const close = () => server.close()
-
-    while (!error) {
-      const { request, response } = yield* Async.run((signal) => {
-        signal.addEventListener('abort', close)
-        return nextRequest(server)
-      })
-      if(error) break
-      yield* Fork.fork(handle(request, response))
-    }
-
-    if(error) yield* Fail.fail(error)
-  })
+      if (error) yield* Fail.fail(error)
+    })
+  )
 
 const nextRequest = (server: Server) =>
   new Promise<{ request: IncomingMessage, response: ServerResponse }>((resolve) =>
@@ -82,7 +83,7 @@ const r = serve(myHandler).pipe(
   Env.provide({ port: +port }),
   Log.console,
   Time.builtinDate,
-  withResources,
+  scope,
   Fail.catchAll,
   Run.async
 )
