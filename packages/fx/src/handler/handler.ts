@@ -89,6 +89,7 @@ export function control<const E1, const R1, const E extends Effects, const SE, c
     return fx(function* () {
       const i = f[Symbol.iterator]()
       let s
+
       try {
         s = handler.initially ? (yield* handler.initially) : undefined
         let ir = i.next()
@@ -115,7 +116,6 @@ export function control<const E1, const R1, const E extends Effects, const SE, c
         if (handler.finally) yield* handler.finally(s as never)
       }
     })
-
   }
 
 export function handle<const E1, const R1, const E extends Effects, const SE, const FE, const S, const A, const E2, const R>(

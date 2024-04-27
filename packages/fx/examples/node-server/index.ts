@@ -1,6 +1,6 @@
 import { IncomingMessage, Server, ServerResponse, createServer } from 'http'
 
-import { Async, Effect, Env, Fail, Fork, Fx, Handler, Log, Run, Time, fx, ok } from '../../src'
+import { Async, Effect, Env, Fail, Fork, Fx, Handler, Log, Run, Time, fx, is, ok, sync } from '../../src'
 
 // ----------------------------------------------------------------------
 // #region Resource effect to acquire and release resources within a scope
@@ -19,15 +19,29 @@ const scope = <const E, const A>(f: Fx<E, A>) => Handler.control(f, [Acquire], {
   initially: ok([] as readonly Fx<unknown, unknown>[]),
   handle: (ar, resources) => fx(function* () {
     const { acquire, release } = ar.arg
-    const a = yield* acquire
+    const a = yield* Fail.catchEither(acquire)
+    if(is(Fail.Fail, a)) {
+      const failures = releaseSafely(resources)
+      return yield* Fail.fail([a.arg, ...failures])
+    }
     return Handler.resume(a, [release(a), ...resources])
   }),
   finally: resources => fx(function* () {
-    for (const release of resources) yield* release
+    const failures = yield* releaseSafely(resources)
+    if (failures.length) return yield* Fail.fail(failures)
   })
-}) as Fx<ExcludeResources<E>, A>
+}) as Fx<UnwrapAcquire<E>, A>
 
-type ExcludeResources<Effect> = Effect extends Acquire<infer E> ? E : Effect
+const releaseSafely = (resources: readonly Fx<unknown, unknown>[]) => fx(function* () {
+  const failures = [] as unknown[]
+  for (const release of resources) {
+    const r = yield* Fail.catchEither(release)
+    if (is(Fail.Fail, r)) failures.push(r.arg)
+  }
+  return failures
+})
+
+type UnwrapAcquire<Effect> = Effect extends Acquire<infer E> ? E : Effect
 // #endregion
 
 // ----------------------------------------------------------------------
@@ -39,9 +53,9 @@ const serve = <E, A>(
       const { port } = yield* Env.get<{ port: number }>()
       return createServer().listen(port)
     }),
-    (server) => ok(void server.close()),
+    (server) => sync(() => void server.close()),
     (server) => fx(function* () {
-
+      // TODO: What is the right way to handle errors and other events?
       let error: Error | undefined
       server.once('error', e => error = e)
 
@@ -52,6 +66,7 @@ const serve = <E, A>(
           signal.addEventListener('abort', close)
           return nextRequest(server)
         })
+
         if (error) break
         yield* Fork.fork(handle(request, response))
       }
@@ -88,7 +103,7 @@ const r = serve(myHandler).pipe(
   Run.async
 )
 
-r.promise.then(console.log)
+r.promise.then(console.log, console.error)
 
 // setTimeout(() => r[Symbol.dispose](), 1000)
 // #endregion

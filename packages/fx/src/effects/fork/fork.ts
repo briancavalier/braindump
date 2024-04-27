@@ -47,7 +47,9 @@ export const schedule = <const E, const A>(f: Fx<E, A>, s: Semaphore): Process<A
 
   const promise = acquire(s, scope, () => new Promise<A>(async (resolve, reject) => {
     const i = f[Symbol.iterator]()
+    scope.add(new IteratorDisposable(i))
     let ir = i.next()
+
     while (!ir.done) {
       if (is(Async, ir.value)) {
         const p = runProcess(ir.value.arg)
@@ -91,15 +93,22 @@ const runProcess = <A>(run: (s: AbortSignal) => Promise<A>) => {
 }
 
 const withContext = (c: readonly HandlerContext[], f: Fx<unknown, unknown>) =>
-  c.reduce((f, c) => handle(
+  c.reduce((f, { effects, handler, state }) => handle(
     f,
-    c.effects,
-    c.handler.initially
-      ? { ...c.handler, initially: ok(c.state) }
-      : c.handler as any
+    effects,
+    {
+      initially: handler.initially ? ok(state) : undefined,
+      handle: handler.handle,
+      finally: undefined
+    } as any
   ), f)
 
 class AbortControllerDisposable {
   constructor(private readonly controller: AbortController) { }
   [Symbol.dispose]() { this.controller.abort() }
+}
+
+class IteratorDisposable {
+  constructor(private readonly iterator: Iterator<unknown>) { }
+  [Symbol.dispose]() { this.iterator.return?.() }
 }

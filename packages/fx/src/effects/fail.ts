@@ -20,3 +20,9 @@ export const catchAll = <const E, const A>(
 ) => control(f, [Fail], {
   handle: (e) => ok(done(e.arg))
 }) as Fx<Exclude<E, Fail<any>>, A | Failures<E>>
+
+export const catchEither = <const E, const A>(
+  f: Fx<E, A>
+) => control(f, [Fail], {
+  handle: (e) => ok(done(e))
+}) as Fx<Exclude<E, Fail<any>>, A | Extract<E, Fail<any>>>
