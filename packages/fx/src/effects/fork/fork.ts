@@ -93,15 +93,14 @@ const runProcess = <A>(run: (s: AbortSignal) => Promise<A>) => {
 }
 
 const withContext = (c: readonly HandlerContext[], f: Fx<unknown, unknown>) =>
-  c.reduce((f, { effects, handler, state }) => handle(
-    f,
-    effects,
-    {
-      initially: handler.initially ? ok(state) : undefined,
-      handle: handler.handle,
-      finally: undefined
-    } as any
-  ), f)
+  c.reduce((f, { effects, handler, state, forkable }) =>
+    forkable
+      ? handle(f, effects, {
+        initially: handler.initially ? ok(state) : undefined,
+        handle: handler.handle,
+      } as any)
+      : f,
+    f)
 
 class AbortControllerDisposable {
   constructor(private readonly controller: AbortController) { }

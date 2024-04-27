@@ -11,4 +11,5 @@ export type HandlerContext = {
   effects: readonly EffectType[]
   handler: AnyHandler
   state: unknown
+  forkable: boolean
 }

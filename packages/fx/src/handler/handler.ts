@@ -1,6 +1,9 @@
 // eslint-disable-next-line import/no-cycle
 import { Fork } from '../effects/fork/fork'
-import { EffectType, Fx, FxIterable, fx, is } from '../fx'
+import { EffectType, Fx, FxIterable, is } from '../fx'
+import { pipe } from '../pipe'
+
+import { AnyHandler } from './context'
 
 export type Step<A, R, S> = Resume<A, S> | Return<R>
 export type Resume<A, S = void> = { tag: 'resume', value: A, state: S }
@@ -86,36 +89,7 @@ export function control<const E1, const R1, const E extends Effects, const SE, c
     return?: (r: R1 | R2, s: S) => R
     finally?: (s: S) => FxIterable<FE, void>
   }): Fx<SE | Exclude<E1, Type<E>> | E2 | FE, R1 | R2 | R> {
-    return fx(function* () {
-      const i = f[Symbol.iterator]()
-      let s
-
-      try {
-        s = handler.initially ? (yield* handler.initially) : undefined
-        let ir = i.next()
-
-        while (!ir.done) {
-          if (matches(effects, ir.value)) {
-            const hr: Step<A, R1 | R2, S> = yield* handler.handle((ir.value), s as never)
-            switch (hr.tag) {
-              case 'return':
-                return handler.return ? handler.return(hr.value, s as never) : hr.value
-              case 'resume':
-                s = hr.state
-                ir = i.next(hr.value)
-                break
-            }
-          }
-          else
-            ir = i.next(yield ir.value as any)
-        }
-
-        return handler.return ? handler.return(ir.value, s as never) : ir.value
-      } finally {
-        if (i.return) i.return()
-        if (handler.finally) yield* handler.finally(s as never)
-      }
-    })
+    return new Handler(f, effects, handler, true)
   }
 
 export function handle<const E1, const R1, const E extends Effects, const SE, const FE, const S, const A, const E2, const R>(
@@ -187,33 +161,53 @@ export function handle<const E1, const R1, const E extends Effects, const SE, co
     return?: (r: R1, s: S) => R
     finally?: (s: S) => FxIterable<FE, void>
   }): Fx<SE | Exclude<E1, Type<E>> | E2 | FE, R1 | R> {
-    return fx(function* () {
-      const i = f[Symbol.iterator]()
-      let s
-
-      try {
-        s = handler.initially ? (yield* handler.initially) : undefined
-        let ir = i.next()
-
-        while (!ir.done) {
-          if (matches(effects, ir.value)) {
-            const hr: Resume<A, S> = yield* handler.handle((ir.value), s as never)
-            s = hr.state
-            ir = i.next(hr.value)
-          }
-          else if (is(Fork, ir.value))
-            ir = i.next(yield new Fork(ir.value.arg, [...ir.value.context, { effects, handler, state: s }]) as any)
-          else
-            ir = i.next(yield ir.value as any)
-        }
-
-        return handler.return ? handler.return(ir.value, s as never) : ir.value
-      } finally {
-        if (i.return) i.return()
-        if (handler.finally) yield* handler.finally(s as never)
-      }
-    })
-}
+    return new Handler(f, effects, handler, true)
+  }
 
 const matches = <const E extends Effects, const T>(e: E, t: T): t is Type<E> =>
   e.some(effectType => (t as any).id === effectType.id)
+
+class Handler implements Fx<unknown, unknown> {
+  constructor(
+    public readonly fx: FxIterable<unknown, unknown>,
+    public readonly effects: readonly EffectType[],
+    public readonly handler: AnyHandler,
+    public readonly forkable: boolean
+  ) { }
+
+  // eslint-disable-next-line prefer-rest-params
+  pipe() { return pipe(this, arguments) }
+
+  *[Symbol.iterator]() {
+    const i = this.fx[Symbol.iterator]()
+    let s
+
+    try {
+      s = this.handler.initially ? (yield* this.handler.initially) : undefined
+      let ir = i.next()
+
+      while (!ir.done) {
+        if (matches(this.effects, ir.value)) {
+          const hr: Step<any, any, any> = yield* this.handler.handle((ir.value), s as never) as any
+          switch (hr.tag) {
+            case 'return':
+              return this.handler.return ? this.handler.return(hr.value, s as never) : hr.value
+            case 'resume':
+              s = hr.state
+              ir = i.next(hr.value)
+              break
+          }
+        }
+        else if (is(Fork, ir.value))
+          ir = i.next(yield new Fork(ir.value.arg, [...ir.value.context, { ...this, state: s }]) as any)
+        else
+          ir = i.next(yield ir.value as any)
+      }
+
+      return this.handler.return ? this.handler.return(ir.value, s as never) : ir.value
+    } finally {
+      if (i.return) i.return()
+      if (this.handler.finally) yield* this.handler.finally(s as never)
+    }
+  }
+}
