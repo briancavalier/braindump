@@ -1,7 +1,6 @@
 import { IncomingMessage, ServerResponse } from 'http'
 
-import { Env, Fail, Log, Run, Time, fx } from '../../src'
-import { scope } from '../../src/effects/resource'
+import { Env, Fail, Log, Resource, Run, Time, fx } from '../../src'
 
 import { serve } from './serve'
 
@@ -12,7 +11,6 @@ const myHandler = (req: IncomingMessage, res: ServerResponse) => fx(function* ()
   res.writeHead(200, { 'Content-Type': 'text/plain' })
   res.end(`ok`)
 })
-// #endregion
 
 // ----------------------------------------------------------------------
 // #region Run the server
@@ -22,10 +20,7 @@ serve(myHandler).pipe(
   Env.provide({ port: +port }),
   Log.console,
   Time.builtinDate,
-  scope,
+  Resource.scope,
   Fail.catchAll,
   Run.async
-).promise.then(console.log, console.error)
-
-// setTimeout(() => r[Symbol.dispose](), 1000)
-// #endregion
+)

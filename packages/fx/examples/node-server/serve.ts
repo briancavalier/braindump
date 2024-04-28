@@ -1,7 +1,6 @@
 import { IncomingMessage, Server, ServerResponse, createServer } from 'http'
 
-import { Async, Env, Fail, Fork, Fx, fx, sync } from '../../src'
-import { bracket } from '../../src/effects/resource'
+import { Async, Env, Fail, Fork, Fx, Resource, fx, sync } from '../../src'
 
 // ----------------------------------------------------------------------
 // Run a server, using the provided handler to process requests
@@ -9,7 +8,7 @@ import { bracket } from '../../src/effects/resource'
 
 export const serve = <E, A>(
   handle: (req: IncomingMessage, res: ServerResponse) => Fx<E, A>
-) => bracket(
+) => Resource.bracket(
   fx(function* () {
     const { port } = yield* Env.get<{ port: number} >()
     return createServer().listen(port)
