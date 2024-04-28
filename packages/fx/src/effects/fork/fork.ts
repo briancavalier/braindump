@@ -1,7 +1,6 @@
 import { Effect, Fx, fx, is, ok } from '../../fx'
-import { HandlerContext } from '../../handler/context'
 // eslint-disable-next-line import/no-cycle
-import { handle, resume } from '../../handler/handler'
+import { HandlerContext, handle, resume } from '../../handler/handler'
 import { Async } from '../async'
 import { Fail, Failures } from '../fail'
 
@@ -93,9 +92,9 @@ const runProcess = <A>(run: (s: AbortSignal) => Promise<A>) => {
 }
 
 const withContext = (c: readonly HandlerContext[], f: Fx<unknown, unknown>) =>
-  c.reduce((f, { effects, handler, state, forkable }) =>
-    forkable
-      ? handle(f, effects, {
+  c.reduce((f, { handler, state }) =>
+    handler.forkable
+      ? handle(f, handler.effects, {
         initially: handler.initially ? ok(state) : undefined,
         handle: handler.handle,
       } as any)

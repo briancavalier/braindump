@@ -1,4 +1,5 @@
 import { Effect, Fx, fx, ok } from '../fx'
+// eslint-disable-next-line import/no-cycle
 import { control, done, resume } from '../handler/handler'
 
 export class Fail<const E> extends Effect('fx/Fail.Fail')<E, never> { }
@@ -21,7 +22,7 @@ export const catchAll = <const E, const A>(
   handle: (e) => ok(done(e.arg))
 }) as Fx<Exclude<E, Fail<any>>, A | Failures<E>>
 
-export const catchEither = <const E, const A>(
+export const catchFail = <const E, const A>(
   f: Fx<E, A>
 ) => control(f, [Fail], {
   handle: (e) => ok(done(e))
