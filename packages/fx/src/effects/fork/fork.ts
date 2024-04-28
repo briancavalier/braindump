@@ -1,6 +1,6 @@
 import { Effect, Fx, fx, is, ok } from '../../fx'
-import { HandlerContext } from '../../handler/context'
-import { handle, resume } from '../../handler/handler'
+// eslint-disable-next-line import/no-cycle
+import { HandlerContext, handle, resume } from '../../handler/handler'
 import { Async } from '../async'
 import { Fail, Failures } from '../fail'
 
@@ -33,21 +33,22 @@ type EffectsOf<F> = F extends Fx<infer E, unknown> ? E : never
 type ResultOf<F> = F extends Fx<unknown, infer A> ? A : never
 type Errors<E> = E extends Fail<infer F> ? F : never
 
-export const unbounded = <const E, const A>(f: Fx<E, A>) =>
-  bounded(f, Infinity)
-
-export const bounded = <const E, const A>(f: Fx<E, A>, maxConcurrency: number) =>
+export const bounded = (maxConcurrency: number) => <const E, const A>(f: Fx<E, A>) =>
   handle(f, [Fork], {
     initially: ok(new Semaphore(maxConcurrency)),
     handle: (f, s) => ok(resume(schedule(withContext(f.context, f.arg), s), s))
   })
+
+export const unbounded = bounded(Infinity)
 
 export const schedule = <const E, const A>(f: Fx<E, A>, s: Semaphore): Process<A, Failures<E>> => {
   const scope = new Scope()
 
   const promise = acquire(s, scope, () => new Promise<A>(async (resolve, reject) => {
     const i = f[Symbol.iterator]()
+    scope.add(new IteratorDisposable(i))
     let ir = i.next()
+
     while (!ir.done) {
       if (is(Async, ir.value)) {
         const p = runProcess(ir.value.arg)
@@ -91,15 +92,21 @@ const runProcess = <A>(run: (s: AbortSignal) => Promise<A>) => {
 }
 
 const withContext = (c: readonly HandlerContext[], f: Fx<unknown, unknown>) =>
-  c.reduce((f, c) => handle(
-    f,
-    c.effects,
-    c.handler.initially
-      ? { ...c.handler, initially: ok(c.state) }
-      : c.handler as any
-  ), f)
+  c.reduce((f, { handler, state }) =>
+    handler.forkable
+      ? handle(f, handler.effects, {
+        initially: handler.initially ? ok(state) : undefined,
+        handle: handler.handle,
+      } as any)
+      : f,
+    f)
 
 class AbortControllerDisposable {
   constructor(private readonly controller: AbortController) { }
   [Symbol.dispose]() { this.controller.abort() }
+}
+
+class IteratorDisposable {
+  constructor(private readonly iterator: Iterator<unknown>) { }
+  [Symbol.dispose]() { this.iterator.return?.() }
 }

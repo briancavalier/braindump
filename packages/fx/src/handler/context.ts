@@ -1,14 +1,8 @@
-import { EffectType, FxIterable } from '../fx'
+import { FxIterable } from '../fx'
 
-type AnyHandler = {
-  initially?: FxIterable<unknown, unknown>
+export type AnyHandler = {
+  initially?: undefined | FxIterable<unknown, unknown>
   handle: (e: any, s: any) => FxIterable<unknown, unknown>
-  return?: (r: any, s: any) => unknown
-  finally?: (s: any) => FxIterable<unknown, unknown>
-}
-
-export type HandlerContext = {
-  effects: readonly EffectType[]
-  handler: AnyHandler
-  state: unknown
+  return?: undefined | ((r: any, s: any) => unknown)
+  finally?: undefined | ((s: any) => FxIterable<unknown, unknown>)
 }
