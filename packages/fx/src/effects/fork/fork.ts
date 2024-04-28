@@ -34,7 +34,8 @@ type ResultOf<F> = F extends Fx<unknown, infer A> ? A : never
 type Errors<E> = E extends Fail<infer F> ? F : never
 
 export const bounded = (maxConcurrency: number) => <const E, const A>(f: Fx<E, A>) =>
-  handle(f, [Fork], {
+  handle(f, {
+    effects: [Fork],
     initially: ok(new Semaphore(maxConcurrency)),
     handle: (f, s) => ok(resume(schedule(withContext(f.context, f.arg), s), s))
   })
@@ -94,7 +95,8 @@ const runProcess = <A>(run: (s: AbortSignal) => Promise<A>) => {
 const withContext = (c: readonly HandlerContext[], f: Fx<unknown, unknown>) =>
   c.reduce((f, { handler, state }) =>
     handler.forkable
-      ? handle(f, handler.effects, {
+      ? handle(f, {
+        effects: handler.effects,
         initially: handler.initially ? ok(state) : undefined,
         handle: handler.handle,
       } as any)

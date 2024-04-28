@@ -13,7 +13,8 @@ const runState = <const E, const A>(s: StateOf<E>, f: Fx<E, A>) => handleState(s
 // const getState = <const E, const A>(s: StateOf<E>, f: Fx<E, A>) => handleState(s, (_, s) => s, f)
 
 const handleState = <const E, const A, const R, const S = StateOf<E>>(s: S, r: (a: A, s: S) => R, f: Fx<E, A>) =>
-  Handler.handle(f, [Get, Set], {
+  Handler.handle(f, {
+    effects: [Get, Set],
     initially: ok(s),
     // eslint-disable-next-line require-yield
     handle(gs, s) {

@@ -17,7 +17,8 @@ type ExcludeEnv<E, S> =
   : E
 
 export const provide = <const S extends Record<PropertyKey, unknown>>(s: S) => <const E, const A>(f: Fx<E, A>) =>
-  handle(f, [Get], {
+  handle(f, {
+    effects: [Get],
     initially: ok(s),
     handle: (_, s) => fx(function* () {
       return resume({ ...(yield* get()), ...s }, s)
@@ -28,7 +29,8 @@ export type EnvOf<E> = U2I<EachEnv<E>>
 type EachEnv<E> = E extends Get<infer A> ? A : never
 
 export const provideAll = <const S extends Record<PropertyKey, unknown>>(s: S) => <const E, const A>(f: Fx<CheckEnv<S, E>, A>) =>
-  handle(f, [Get], {
+  handle(f, {
+    effects: [Get],
     initially: ok(s),
     handle: (_, s) => ok(resume(s, s))
   }) as Fx<ExcludeEnv<E, S>, A>

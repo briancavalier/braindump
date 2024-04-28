@@ -27,7 +27,9 @@ export const bracket = <const A, const R, const E1, const E2, const E3>(
 }))
 
 // Handler to scope resource allocation/release
-export const scope = <const E, const A>(f: Fx<E, A>) => control(f, [Acquire], {
+export const scope = <const E, const A>(f: Fx<E, A>) => control(f, {
+  effects: [Acquire],
+
   initially: ok([] as readonly Fx<unknown, unknown>[]),
 
   handle: (ar, resources) => fx(function* () {
