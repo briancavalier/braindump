@@ -1,5 +1,6 @@
 import { Effect, Fx, ok } from '../fx'
-import { handle, resume } from '../handler/handler'
+import { handle } from '../handler/handler'
+import { resume } from '../handler/step'
 
 export class Now extends Effect('fx/Time.Now')<void, number> { }
 

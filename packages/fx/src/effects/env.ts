@@ -1,5 +1,5 @@
 import { Effect, Fx, fx, ok } from '../fx'
-import { handle, resume } from '../handler/handler'
+import { handle, resume } from '../handler'
 
 // void | E allows the arg to be omitted while
 // still exposing E in the return type

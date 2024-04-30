@@ -1,15 +1,14 @@
-import { IncomingMessage, ServerResponse } from 'http'
 
 import { Env, Fail, Log, Resource, Run, Time, fx } from '../../src'
 
-import { serve } from './serve'
+import { Connection, serve } from './serve'
 
 // ----------------------------------------------------------------------
 // Define the handler for requests
-const myHandler = (req: IncomingMessage, res: ServerResponse) => fx(function* () {
-  yield* Log.info(`Received request`, { method: req.method, url: req.url })
-  res.writeHead(200, { 'Content-Type': 'text/plain' })
-  res.end(`ok`)
+const myHandler = ({ request, response }: Connection) => fx(function* () {
+  yield* Log.info(`Received request`, { method: request.method, url: request.url })
+  response.writeHead(200, { 'Content-Type': 'text/plain' })
+  response.end(`ok`)
 })
 
 // ----------------------------------------------------------------------

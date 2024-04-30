@@ -1,5 +1,5 @@
 import { Effect, Fx, fx, is, ok } from '../fx'
-import { control, resume } from '../handler/handler'
+import { control, resume } from '../handler'
 
 import { Fail, catchFail, fail } from './fail'
 

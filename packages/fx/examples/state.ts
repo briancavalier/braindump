@@ -1,6 +1,11 @@
+import { setTimeout } from 'timers/promises'
 import { inspect } from 'util'
 
-import { Async, Effect, Fork, Fx, Handler, Process, Run, fx, ok } from '../src'
+import { Async, Effect, Fork, Fx, Handler, Run, fx, ok } from '../src'
+
+const delay = (ms: number) => Async.run(
+  signal => setTimeout(ms, undefined, { signal })
+)
 
 class Get<A> extends Effect('Get')<void, A> { }
 class Set<A> extends Effect('Set')<A, void> { }
@@ -8,8 +13,8 @@ class Set<A> extends Effect('Set')<A, void> { }
 const get = <const A>() => new Get<A>().send()
 const set = <const A>(value: A) => new Set(value).send()
 
-// const withState = <const E, const A>(s: StateOf<E>, f: Fx<E, A>) => handleState(s, (a, s) => [a, s] as const, f)
-const runState = <const E, const A>(s: StateOf<E>, f: Fx<E, A>) => handleState(s, a => a, f)
+const withState = <const E, const A>(s: StateOf<E>, f: Fx<E, A>) => handleState(s, (a, s) => [a, s] as const, f)
+// const runState = <const E, const A>(s: StateOf<E>, f: Fx<E, A>) => handleState(s, a => a, f)
 // const getState = <const E, const A>(s: StateOf<E>, f: Fx<E, A>) => handleState(s, (_, s) => s, f)
 
 const handleState = <const E, const A, const R, const S = StateOf<E>>(s: S, r: (a: A, s: S) => R, f: Fx<E, A>) =>
@@ -33,23 +38,33 @@ type U2I<U> = (U extends any ? (k: U) => void : never) extends ((k: infer I) => 
 const f = fx(function* () {
   const x0 = yield* get<number>()
   yield* set(x0 + 1)
+  yield* delay(100)
   const x1 = yield* get<number>()
   yield* set(x1 + 1)
+  yield* delay(100)
   const x2 = yield* get<number>()
   return [x0, x1, x2]
 })
 
-const main = fx(function* () {
-  const x0 = yield* get<number>()
-  yield* set(x0 + 1)
-  const r1 = yield* Fork.fork(f)
-  const r2 = yield* Fork.fork(f)
-  const r3 = yield* Async.wait(Process.all(r1, r2))
+const main1 = fx(function* () {
+  const r1 = yield* Fork.all(f, f)
+  const r3 = yield* Async.wait(r1)
   return r3
 })
 
-// const m1 = withState(1, main)
-const m1 = runState(1, main)
-// const m1 = getState(1, main)
+const main2 = fx(function* () {
+  const r1 = yield* Fork.all(withState(1, f), withState(1, f))
+  const r3 = yield* Async.wait(r1)
+  return r3
+})
 
-Run.async(m1).promise.then(x => console.log(inspect(x, false, Infinity)))
+const main = fx(function* () {
+  return {
+    // Sharing state
+    shared: yield* withState(1, main1),
+    // Isolated state
+    isolated: yield* main2
+  }
+})
+
+Run.async(main).promise.then(x => console.log(inspect(x, false, Infinity)))

@@ -1,6 +1,6 @@
 export * from './fx'
 
-export * as Handler from './handler/handler'
+export * as Handler from './handler'
 export * as Run from './run'
 
 export * as Async from './effects/async'
