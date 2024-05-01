@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 
+import { fx } from '../fx'
+import { sync as runSync } from '../run'
+
 import { get, provide, provideAll } from './env'
-import { fx } from './fx'
-import { sync as runSync } from './run'
 
 
 describe('Env', () => {
