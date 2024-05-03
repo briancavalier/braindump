@@ -10,21 +10,20 @@ import { Print, RandomInt, Read, checkAnswer, main } from './main'
 // *Pure* handlers for all the effects the game needs.
 // This version of the game is completely pure, with no side effects.
 
-const handlePrint = <const E, const A>(f: Fx<E, A>) => Handler.handle(f)
+const handlePrint = <const E, const A>(f: Fx<E, A>) => Handler
   .initially(ok([] as readonly string[]))
   .on(Print, (s, ss) => ok(Handler.resume(undefined, [...ss, s])))
-  .return((_, s) => s)
+  .handle(f, (_, s) => s)
 
-const handleRead = (responses: readonly string[]) => <const E, const A>(f: Fx<E, A>) => Handler.handle(f)
+const handleRead = (responses: readonly string[]) => <const E, const A>(f: Fx<E, A>) => Handler
   .initially(ok(responses))
   .on(Read, (_, [s, ...ss]) => ok(Handler.resume(s, ss)))
-  .return()
+  .handle(f)
 
-const handleRandom = (values: readonly number[]) => <const E, const A>(f: Fx<E, A>) => Handler.handle(f)
+const handleRandom = (values: readonly number[]) => <const E, const A>(f: Fx<E, A>) => Handler
 .initially(ok(values))
-.on(RandomInt, ({ min, max }, [n, ...rest]) =>
-  ok(Handler.resume(Math.max(min, Math.min(max, n)), [...rest, n])))
-.return()
+.on(RandomInt, ({ min, max }, [n, ...rest]) => ok(Handler.resume(Math.max(min, Math.min(max, n)), [...rest, n])))
+.handle(f)
 
 // #endregion
 // -------------------------------------------------------------------

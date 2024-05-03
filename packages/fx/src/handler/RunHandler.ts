@@ -3,7 +3,7 @@ import { Fork } from '../effects/fork/fork'
 import { Fx, FxIterable, is } from '../fx'
 import { pipe } from '../pipe'
 
-import { Step } from './Step'
+import { Step } from './Continuation'
 
 export type HandlerState<S> = {
   value: S | undefined

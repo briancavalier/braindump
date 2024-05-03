@@ -1,5 +1,5 @@
 import { Effect, Fx, fx, is, ok } from '../fx'
-import { control, resume } from '../handler'
+import { Control } from '../handler'
 
 import { Fail, catchFail, fail } from './fail'
 
@@ -27,7 +27,7 @@ export const bracket = <const A, const R, const E1, const E2, const E3>(
 }))
 
 // Handler to scope resource allocation/release
-export const scope = <const E, const A>(f: Fx<E, A>) => control(f)
+export const scope = <const E, const A>(f: Fx<E, A>) => Control
   .initially(
     ok([] as readonly Fx<unknown, unknown>[])
   )
@@ -39,7 +39,7 @@ export const scope = <const E, const A>(f: Fx<E, A>) => control(f)
       return yield* fail([a.arg, ...failures])
     }
 
-    return resume(a, [release(a), ...resources])
+    return Control.resume(a, [release(a), ...resources])
   }))
   .finally(
     resources => fx(function* () {
@@ -47,7 +47,7 @@ export const scope = <const E, const A>(f: Fx<E, A>) => control(f)
       if (failures.length) return yield* fail(failures)
     })
   )
-  .return() as Fx<UnwrapAcquire<E>, A>
+  .handle(f) as Fx<UnwrapAcquire<E>, A>
 
 const releaseSafely = (resources: readonly Fx<unknown, unknown>[]) => fx(function* () {
   const failures = [] as unknown[]

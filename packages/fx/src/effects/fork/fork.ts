@@ -1,6 +1,6 @@
 import { Effect, Fx, fx, is, ok } from '../../fx'
 // eslint-disable-next-line import/no-cycle
-import { handle, resume } from '../../handler'
+import { Handler } from '../../handler'
 import { HandlerContext, RunHandler } from '../../handler/RunHandler'
 // eslint-disable-next-line import/no-cycle
 import { Async } from '../async'
@@ -34,10 +34,10 @@ type ResultOf<F> = F extends Fx<unknown, infer A> ? A : never
 type Errors<E> = E extends Fail<infer F> ? F : never
 
 export const bounded = (maxConcurrency: number) => <const E, const A>(f: Fx<E, A>) =>
-  handle(f)
+  Handler
     .initially(ok(new Semaphore(maxConcurrency)))
-    .on(Fork, ({ fx, context }, s) => ok(resume(schedule(withContext(context, fx), s), s)))
-    .return()
+    .on(Fork, ({ fx, context }, s) => ok(Handler.resume(schedule(withContext(context, fx), s), s)))
+    .handle(f)
 
 export const unbounded = bounded(Infinity)
 
