@@ -17,23 +17,21 @@ type ExcludeEnv<E, S> =
   : E
 
 export const provide = <const S extends Record<PropertyKey, unknown>>(s: S) => <const E, const A>(f: Fx<E, A>) =>
-  handle(f, {
-    effects: [Get],
-    initially: ok(s),
-    handle: (_, s) => fx(function* () {
+  handle(f)
+    .initially(ok(s))
+    .on(Get, (_, s) => fx(function* () {
       return resume({ ...(yield* get()), ...s }, s)
-    })
-  }) as Fx<ExcludeEnv<E, S>, A>
+    }))
+    .return() as Fx<ExcludeEnv<E, S>, A>
 
 export type EnvOf<E> = U2I<EachEnv<E>>
 type EachEnv<E> = E extends Get<infer A> ? A : never
 
 export const provideAll = <const S extends Record<PropertyKey, unknown>>(s: S) => <const E, const A>(f: Fx<CheckEnv<S, E>, A>) =>
-  handle(f, {
-    effects: [Get],
-    initially: ok(s),
-    handle: (_, s) => ok(resume(s, s))
-  }) as Fx<ExcludeEnv<E, S>, A>
+  handle(f)
+    .initially(ok(s))
+    .on(Get, (_, s) => ok(resume(s, s)))
+    .return() as Fx<ExcludeEnv<E, S>, A>
 
 type U2I<U> = (U extends any ? (k: U) => void : never) extends ((k: infer I) => void) ? I : never
 

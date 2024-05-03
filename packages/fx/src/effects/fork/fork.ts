@@ -1,9 +1,8 @@
 import { Effect, Fx, fx, is, ok } from '../../fx'
 // eslint-disable-next-line import/no-cycle
 import { handle, resume } from '../../handler'
-import { HandlerContext } from '../../handler/context'
+import { HandlerContext, RunHandler } from '../../handler/RunHandler'
 // eslint-disable-next-line import/no-cycle
-import { Handler } from '../../handler/internal/handler'
 import { Async } from '../async'
 import { Fail, Failures } from '../fail'
 
@@ -11,12 +10,10 @@ import { Process, all as processAll, race as processRace } from './process'
 import { Scope } from './scope'
 import { Semaphore } from './semaphore'
 
-export class Fork extends Effect('fx/Fork.Fork')<Fx<unknown, unknown>, Process<unknown, unknown>> {
-  constructor(f: Fx<unknown, unknown>, public readonly context: readonly HandlerContext[]) { super(f) }
-}
+export class Fork extends Effect('fx/Fork.Fork')<Readonly<{ fx: Fx<unknown, unknown>, context: readonly HandlerContext[] }>, Process<unknown, unknown>> {}
 
-export const fork = <const E, const A>(f: Fx<E, A>) =>
-  new Fork(f, []).send() as Fx<Exclude<E, Async | Fail<any>> | Fork, Process<A, Errors<E>>>
+export const fork = <const E, const A>(fx: Fx<E, A>) =>
+  new Fork({ fx, context: [] }).send() as Fx<Exclude<E, Async | Fail<any>> | Fork, Process<A, Errors<E>>>
 
 export const all = <Fxs extends readonly Fx<unknown, unknown>[]>(...fxs: Fxs) => fx(function* () {
   const ps = [] as Process<unknown, unknown>[]
@@ -37,11 +34,10 @@ type ResultOf<F> = F extends Fx<unknown, infer A> ? A : never
 type Errors<E> = E extends Fail<infer F> ? F : never
 
 export const bounded = (maxConcurrency: number) => <const E, const A>(f: Fx<E, A>) =>
-  handle(f, {
-    effects: [Fork],
-    initially: ok(new Semaphore(maxConcurrency)),
-    handle: (f, s) => ok(resume(schedule(withContext(f.context, f.arg), s), s))
-  })
+  handle(f)
+    .initially(ok(new Semaphore(maxConcurrency)))
+    .on(Fork, ({ fx, context }, s) => ok(resume(schedule(withContext(context, fx), s), s)))
+    .return()
 
 export const unbounded = bounded(Infinity)
 
@@ -65,7 +61,7 @@ export const schedule = <const E, const A>(f: Fx<E, A>, s: Semaphore): Process<A
         ir = i.next(a)
       }
       else if (is(Fork, ir.value)) {
-        const p = schedule(withContext(ir.value.context, ir.value.arg), s)
+        const p = schedule(withContext(ir.value.arg.context, ir.value.arg.fx), s)
         scope.add(p)
         p.promise
           .finally(() => scope.remove(p))
@@ -96,9 +92,9 @@ const runProcess = <A>(run: (s: AbortSignal) => Promise<A>) => {
 }
 
 const withContext = (c: readonly HandlerContext[], f: Fx<unknown, unknown>) =>
-  c.reduce((f, { handler: { effects, handle }, state, forkable }) =>
-    forkable
-      ? new Handler(f, { effects, handle }, state, forkable)
+  c.reduce((f, handler) =>
+    handler.forkable
+      ? new RunHandler(f, true, handler.state, handler.handlers, undefined, undefined, handler._return)
       : f,
     f)
 

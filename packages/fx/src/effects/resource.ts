@@ -27,13 +27,11 @@ export const bracket = <const A, const R, const E1, const E2, const E3>(
 }))
 
 // Handler to scope resource allocation/release
-export const scope = <const E, const A>(f: Fx<E, A>) => control(f, {
-  effects: [Acquire],
-
-  initially: ok([] as readonly Fx<unknown, unknown>[]),
-
-  handle: (ar, resources) => fx(function* () {
-    const { acquire, release } = ar.arg
+export const scope = <const E, const A>(f: Fx<E, A>) => control(f)
+  .initially(
+    ok([] as readonly Fx<unknown, unknown>[])
+  )
+  .on(Acquire, ({ acquire, release }, resources) => fx(function* () {
     const a = yield* catchFail(acquire)
 
     if (is(Fail, a)) {
@@ -42,13 +40,14 @@ export const scope = <const E, const A>(f: Fx<E, A>) => control(f, {
     }
 
     return resume(a, [release(a), ...resources])
-  }),
-
-  finally: resources => fx(function* () {
-    const failures = yield* releaseSafely(resources)
-    if (failures.length) return yield* fail(failures)
-  })
-}) as Fx<UnwrapAcquire<E>, A>
+  }))
+  .finally(
+    resources => fx(function* () {
+      const failures = yield* releaseSafely(resources)
+      if (failures.length) return yield* fail(failures)
+    })
+  )
+  .return() as Fx<UnwrapAcquire<E>, A>
 
 const releaseSafely = (resources: readonly Fx<unknown, unknown>[]) => fx(function* () {
   const failures = [] as unknown[]
