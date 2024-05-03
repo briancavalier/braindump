@@ -13,22 +13,23 @@ type On<Add, Remove, S> = Handled<Add, Remove, S, 'on' | 'finally' | 'handle'>
 type Finally<Add, Remove, S> = Handled<Add, Remove, S, 'handle'>
 
 type Return<E extends EffectType> = InstanceType<E>['R']
+type Arg<E extends EffectType> = InstanceType<E>['arg']
 
 export class BuilderInit {
   static readonly forkable: boolean
 
-  static initially<IE, S>(i: FxIterable<IE, S>): Initially<IE, never, S> {
+  static initially<InitialEffects, S>(i: FxIterable<InitialEffects, S>): Initially<InitialEffects, never, S> {
     return new Builder(this.forkable, new Map(), i)
   }
 
-  static finally<FE>(f: () => FxIterable<FE, void>): Finally<FE, never, void> {
+  static finally<FinalEffects>(f: () => FxIterable<FinalEffects, void>): Finally<FinalEffects, never, void> {
     return new Builder(this.forkable, new Map(), undefined, f)
   }
 
-  static on<E extends EffectType, OE, S, R2 = never>(
+  static on<E extends EffectType, OnEffects, S, R2 = never>(
     e: E,
-    f: (e: InstanceType<E>['arg'], s: S) => Fx<OE, Step<Return<E>, R2, S>>
-  ): On<OE, InstanceType<E>, S> {
+    f: (e: Arg<E>, s: S) => Fx<OnEffects, Step<Return<E>, R2, S>>
+  ): On<OnEffects, InstanceType<E>, S> {
     return new Builder(this.forkable, new Map().set(e.id as PropertyKey, f))
   }
 
@@ -59,22 +60,22 @@ export class Builder<Add, Remove, S = void> {
     private readonly _finally?: (s: S) => FxIterable<unknown, void>,
   ) { }
 
-  initially<IE, S>(i: FxIterable<IE, S>): Initially<Add | IE, Remove, S> {
+  initially<InitialEffects, S>(i: FxIterable<InitialEffects, S>): Initially<InitialEffects | Add, Remove, S> {
     return new Builder(this.forkable, this.handlers as any, i as any, this._finally as any)
   }
 
-  finally<FE>(f: (s: S) => FxIterable<FE, void>): Finally<Add | FE, Remove, S> {
+  finally<FinalEffects>(f: (s: S) => FxIterable<FinalEffects, void>): Finally<Add | FinalEffects, Remove, S> {
     return new Builder(this.forkable, this.handlers, this._initially, f)
   }
 
-  on<Eff extends EffectType, OE, R2 = never>(e: Eff, f: (e: InstanceType<Eff>['arg'], s: S) => Fx<OE, Step<InstanceType<Eff>['R'], R2, S>>): On<Add | OE, Remove | InstanceType<Eff>, S> {
+  on<E extends EffectType, OnEffects, R2 = never>(e: E, f: (e: Arg<E>, s: S) => Fx<OnEffects, Step<Return<E>, R2, S>>): On<Add | OnEffects, Remove | InstanceType<E>, S> {
     const handlers = new Map(this.handlers).set(e.id as PropertyKey, f)
     return new Builder(this.forkable, handlers, this._initially, this._finally) as any
   }
 
   handle<E, A, R>(fx: Fx<E, A>, r: (r: A, s: S) => R): Fx<Add | Exclude<E, Remove>, R>
   handle<E, A>(fx: Fx<E, A>): Fx<Add | Exclude<E, Remove>, A>
-  handle<E, A, R>(fx: Fx<E, A>, r?: (r: A, s: S) => R): Fx<E, A | R> {
+  handle<E, A, R>(fx: Fx<E, A>, r?: (r: A, s: S) => R): Fx<Add | Exclude<E, Remove>, A | R> {
     return new RunHandler(fx, this.forkable, { value: undefined }, this.handlers, this._initially, this._finally, r)
   }
 }
