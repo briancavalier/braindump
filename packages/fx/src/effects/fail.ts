@@ -1,7 +1,7 @@
 import { Effect, Fx, fx, ok } from '../fx'
 import { Control } from '../handler'
 
-export class Fail<const E> extends Effect('fx/Fail.Fail')<E, never> { }
+export class Fail<const E> extends Effect('fx/Fail/Fail')<E, never> { }
 
 export type Failures<E> = E extends Fail<infer A> ? A : never
 
