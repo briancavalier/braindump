@@ -1,3 +1,4 @@
+import { Ok, Once } from './internal/generator'
 import { Pipeable, pipe } from './pipe'
 
 export interface EffectType {
@@ -6,7 +7,7 @@ export interface EffectType {
 
 export const EffectId = Symbol()
 
-export class Effect <T, A, R = unknown> {
+export class Effect <T, A, R = unknown> implements Pipeable {
   public readonly [EffectId]!: T
   public readonly R!: R
 
@@ -16,8 +17,8 @@ export class Effect <T, A, R = unknown> {
 
   constructor(public readonly arg: A) { }
 
-  *[Symbol.iterator](): Iterator<this, R, any> {
-    return yield this
+  [Symbol.iterator](): Iterator<this, R, any> {
+    return new Once(this)
   }
 }
 
@@ -40,7 +41,7 @@ class GenFx<E, A> {
 }
 
 // eslint-disable-next-line require-yield
-export const ok = <const A>(a: A) => fx(function* () { return a })
+export const ok = <const A>(a: A): Fx<never, A> => new Ok(a)
 
 // eslint-disable-next-line require-yield
 export const sync = <const A>(f: () => A) => fx(function* () { return f() })
