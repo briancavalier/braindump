@@ -1,5 +1,5 @@
 import { Effect, Fx, ok } from '../fx'
-import { Handler } from '../handler/Handler'
+import { Handler } from '../handler/Temp'
 
 export class Now extends Effect<'fx/Time', void, number> { }
 
