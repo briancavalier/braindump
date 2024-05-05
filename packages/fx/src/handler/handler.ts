@@ -1,150 +1,81 @@
+import { EffectType, Fx, FxIterable } from '../fx'
+
+import { Resume, Step } from './Continuation'
 // eslint-disable-next-line import/no-cycle
-import { Fx, FxIterable } from '../fx'
+import { RunHandler } from './RunHandler'
 
-import { Effects, Handler, Instance } from './internal/handler'
-import { empty } from './internal/state'
-import { Resume, Step } from './step'
+type Handled<Add, Remove, S, Interface> = {
+  readonly [K in Extract<keyof Builder<Add, Remove, S>, Interface>]: Builder<Add, Remove, S>[K]
+}
 
-export function control<const E1, const R1, const E extends Effects, const SE, const FE, const S, const A, const E2, const R2, const R>(
-  f: FxIterable<E1, R1>,
-  handler: {
-    effects: E,
-    initially: FxIterable<SE, S>,
-    handle: (e: Instance<E>, s: S) => FxIterable<E2, Step<A, R2, S>>
-    return: (r: R1 | R2, s: S) => R
-    finally: (s: S) => FxIterable<FE, void>
-  }): FxIterable<SE | Exclude<E1, Instance<E>> | E2 | FE, R>
-export function control<const E1, const R1, const E extends Effects, const FE, const A, const E2, const R2, const R>(
-  f: FxIterable<E1, R1>,
-  handler: {
-    effects: E,
-    handle: (e: Instance<E>) => FxIterable<E2, Step<A, R2, void>>
-    return: (r: R1 | R2) => R
-    finally: () => FxIterable<FE, void>
-  }): Fx<Exclude<E1, Instance<E>> | E2 | FE, R>
-export function control<const E1, const R1, const E extends Effects, const SE, const FE, const S, const A, const E2, const R2>(
-  f: FxIterable<E1, R1>,
-  handler: {
-    effects: E,
-    initially: FxIterable<SE, S>,
-    handle: (e: Instance<E>, s: S) => FxIterable<E2, Step<A, R2, S>>
-    finally: (s: S) => Fx<FE, void>
-  }): Fx<SE | Exclude<E1, Instance<E>> | E2 | FE, R1 | R2>
-export function control<const E1, const R1, const E extends Effects, const SE, const S, const A, const E2, const R2, const R>(
-  f: FxIterable<E1, R1>,
-  handler: {
-    effects: E,
-    initially: FxIterable<SE, S>,
-    handle: (e: Instance<E>, s: S) => FxIterable<E2, Step<A, R2, S>>
-    return: (r: R1 | R2, s: S) => R
-  }): Fx<SE | Exclude<E1, Instance<E>> | E2, R>
-export function control<const E1, const R1, const E extends Effects, const A, const E2, const R2, const R>(
-  f: FxIterable<E1, R1>,
-  handler: {
-    effects: E,
-    handle: (e: Instance<E>) => FxIterable<E2, Step<A, R2, void>>
-    return: (r: R1 | R2) => R
-  }): Fx<Exclude<E1, Instance<E>> | E2, R>
-export function control<const E1, const R1, const SE, const E extends Effects, const S, const A, const E2, const R2>(
-  f: FxIterable<E1, R1>,
-  handler: {
-    effects: E,
-    initially: FxIterable<SE, S>,
-    handle: (e: Instance<E>, s: S) => FxIterable<E2, Step<A, R2, S>>
-  }): Fx<SE | Exclude<E1, Instance<E>> | E2, R1 | R2>
-export function control<const E1, const R1, const E extends Effects, const FE, const A, const E2, const R2>(
-  f: FxIterable<E1, R1>,
-  handler: {
-    effects: E,
-    handle: (e: Instance<E>) => FxIterable<E2, Step<A, R2, void>>
-    finally: () => Fx<FE, void>
-  }): Fx<Exclude<E1, Instance<E>> | E2 | FE, R1 | R2>
-export function control<const E1, const R1, const E extends Effects, const A, const E2, const R2>(
-  f: FxIterable<E1, R1>,
-  handler: {
-    effects: E,
-    handle: (e: Instance<E>) => FxIterable<E2, Step<A, R2, void>>
-  }): Fx<Exclude<E1, Instance<E>> | E2, R1 | R2>
-export function control<const E1, const R1, const E extends Effects, const SE, const FE, const S, const A, const E2, const R2, const R>(
-  f: FxIterable<E1, R1>,
-  handler: {
-    effects: E,
-    initially?: FxIterable<SE, S>,
-    handle: (e: Instance<E>, s: S) => FxIterable<E2, Step<A, R2, S>>
-    return?: (r: R1 | R2, s: S) => R
-    finally?: (s: S) => FxIterable<FE, void>
-  }): Fx<SE | Exclude<E1, Instance<E>> | E2 | FE, R1 | R2 | R> {
-    return new Handler(f, handler, empty(), false)
+type Initially<Add, Remove, S> = Handled<Add, Remove, S, 'on' | 'finally' | 'handle'>
+type On<Add, Remove, S> = Handled<Add, Remove, S, 'on' | 'finally' | 'handle'>
+type Finally<Add, Remove, S> = Handled<Add, Remove, S, 'handle'>
+
+type Return<E extends EffectType> = InstanceType<E>['R']
+type Arg<E extends EffectType> = InstanceType<E>['arg']
+
+export class BuilderInit {
+  static readonly forkable: boolean
+
+  static initially<InitialEffects, S>(i: FxIterable<InitialEffects, S>): Initially<InitialEffects, never, S> {
+    return new Builder(this.forkable, new Map(), i)
   }
 
-export function handle<const E1, const R1, const E extends Effects, const SE, const FE, const S, const A, const E2, const R>(
-  f: FxIterable<E1, R1>,
-  handler: {
-    effects: E,
-    initially: FxIterable<SE, S>,
-    handle: (e: Instance<E>, s: S) => FxIterable<E2, Resume<A, S>>
-    return: (r: R1, s: S) => R
-    finally: (s: S) => FxIterable<FE, void>
-  }): Fx<SE | Exclude<E1, Instance<E>> | E2 | FE, R>
-export function handle<const E1, const R1, const E extends Effects, const FE, const A, const E2, const R>(
-  f: FxIterable<E1, R1>,
-  handler: {
-    effects: E,
-    handle: (e: Instance<E>) => FxIterable<E2, Resume<A>>
-    return: (r: R1) => R
-    finally: () => FxIterable<FE, void>
-  }): Fx<Exclude<E1, Instance<E>> | E2 | FE, R>
-export function handle<const E1, const R1, const E extends Effects, const SE, const FE, const S, const A, const E2>(
-  f: FxIterable<E1, R1>,
-  handler: {
-    effects: E,
-    initially: FxIterable<SE, S>,
-    handle: (e: Instance<E>, s: S) => FxIterable<E2, Resume<A, S>>
-    finally: (s: S) => FxIterable<FE, void>
-  }): Fx<SE | Exclude<E1, Instance<E>> | E2 | FE, R1>
-export function handle<const E1, const R1, const E extends Effects, const SE, const S, const A, const E2, const R>(
-  f: FxIterable<E1, R1>,
-  handler: {
-    effects: E,
-    initially: FxIterable<SE, S>,
-    handle: (e: Instance<E>, s: S) => FxIterable<E2, Resume<A, S>>
-    return: (r: R1, s: S) => R
-  }): Fx<SE | Exclude<E1, Instance<E>> | E2, R>
-export function handle<const E1, const R1, const E extends Effects, const A, const E2, const R>(
-  f: FxIterable<E1, R1>,
-  handler: {
-    effects: E,
-    handle: (e: Instance<E>) => FxIterable<E2, Resume<A>>
-    return: (r: R1) => R
-  }): Fx<Exclude<E1, Instance<E>> | E2, R>
-export function handle<const E1, const R1, const SE, const E extends Effects, const S, const A, const E2>(
-  f: FxIterable<E1, R1>,
-  handler: {
-    effects: E,
-    initially: FxIterable<SE, S>,
-    handle: (e: Instance<E>, s: S) => FxIterable<E2, Resume<A, S>>
-  }): Fx<SE | Exclude<E1, Instance<E>> | E2, R1>
-export function handle<const E1, const R1, const E extends Effects, const FE, const A, const E2>(
-  f: FxIterable<E1, R1>,
-  handler: {
-    effects: E,
-    handle: (e: Instance<E>) => FxIterable<E2, Resume<A>>
-    finally: () => FxIterable<FE, void>
-  }): Fx<Exclude<E1, Instance<E>> | E2 | FE, R1>
-export function handle<const E1, const R1, const E extends Effects, const A, const E2>(
-  f: FxIterable<E1, R1>,
-  handler: {
-    effects: E,
-    handle: (e: Instance<E>) => FxIterable<E2, Resume<A>>
-  }): Fx<Exclude<E1, Instance<E>> | E2, R1>
-export function handle<const E1, const R1, const E extends Effects, const SE, const FE, const S, const A, const E2, const R>(
-  f: FxIterable<E1, R1>,
-  handler: {
-    effects: E,
-    initially?: FxIterable<SE, S>,
-    handle: (e: Instance<E>, s: S) => FxIterable<E2, Resume<A, S>>
-    return?: (r: R1, s: S) => R
-    finally?: (s: S) => FxIterable<FE, void>
-  }): Fx<SE | Exclude<E1, Instance<E>> | E2 | FE, R1 | R> {
-    return new Handler(f, handler, empty(), true)
+  static finally<FinalEffects>(f: () => FxIterable<FinalEffects, void>): Finally<FinalEffects, never, void> {
+    return new Builder(this.forkable, new Map(), undefined, f)
   }
+
+  static on<E extends EffectType, OnEffects, S, R2 = never>(
+    e: E,
+    f: (e: Arg<E>, s: S) => Fx<OnEffects, Step<Return<E>, R2, S>>
+  ): On<OnEffects, InstanceType<E>, S> {
+    return new Builder(this.forkable, new Map().set(e, f))
+  }
+
+  static resume<const A>(a: A): Resume<A>
+  static resume<const A, const S>(a: A, s: S): Resume<A, S>
+  static resume<const A, const S>(a: A, s?: S): Resume<A, void | S> {
+    return ({ tag: 'resume', value: a, state: s }) as const
+  }
+
+  static done<const A>(a: A): Step<never, A, never>{
+    return ({ tag: 'return', value: a })
+  }
+}
+
+export class Handler extends BuilderInit {
+  static readonly forkable = true
+}
+
+export class Control extends BuilderInit {
+  static readonly forkable = false
+}
+
+export class Builder<Add, Remove, S = void> {
+  constructor(
+    private readonly forkable: boolean,
+    private readonly handlers: ReadonlyMap<unknown, (e: unknown, s: S) => Fx<unknown, Step<unknown, unknown, S>>> = new Map(),
+    private readonly _initially?: FxIterable<unknown, S>,
+    private readonly _finally?: (s: S) => FxIterable<unknown, void>,
+  ) { }
+
+  initially<InitialEffects, S>(i: FxIterable<InitialEffects, S>): Initially<InitialEffects | Add, Remove, S> {
+    return new Builder(this.forkable, this.handlers as any, i as any, this._finally as any)
+  }
+
+  finally<FinalEffects>(f: (s: S) => FxIterable<FinalEffects, void>): Finally<Add | FinalEffects, Remove, S> {
+    return new Builder(this.forkable, this.handlers, this._initially, f)
+  }
+
+  on<E extends EffectType, OnEffects, R2 = never>(e: E, f: (e: Arg<E>, s: S) => Fx<OnEffects, Step<Return<E>, R2, S>>): On<Add | OnEffects, Remove | InstanceType<E>, S> {
+    const handlers = new Map(this.handlers).set(e, f)
+    return new Builder(this.forkable, handlers, this._initially, this._finally) as any
+  }
+
+  handle<E, A, R>(fx: Fx<E, A>, r: (r: A, s: S) => R): Fx<Add | Exclude<E, Remove>, R>
+  handle<E, A>(fx: Fx<E, A>): Fx<Add | Exclude<E, Remove>, A>
+  handle<E, A, R>(fx: Fx<E, A>, r?: (r: A, s: S) => R): Fx<Add | Exclude<E, Remove>, A | R> {
+    return new RunHandler(fx, this.forkable, { value: undefined }, this.handlers, this._initially, this._finally, r)
+  }
+}

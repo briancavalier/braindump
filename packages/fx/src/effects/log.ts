@@ -1,5 +1,5 @@
 import { Effect, Fx, fx, ok } from '../fx'
-import { handle, resume } from '../handler'
+import { Handler } from '../handler'
 
 import { now } from './time'
 
@@ -18,47 +18,41 @@ export interface LogMessage {
   context?: Record<string, unknown> | undefined
 }
 
-export class Log extends Effect('fx/Log.Log')<LogMessage, void> {}
+export class Log extends Effect<'fx/Log', LogMessage, void> {}
 
-const log = (m: LogMessage) => new Log(m).send()
+const log = (m: LogMessage) => new Log(m)
 
-export const console = <const E, const A>(f: Fx<E, A>) => handle(f, {
-  effects: [Log],
-  handle: (e) => fx(function* () {
+export const console = <const E, const A>(f: Fx<E, A>) => Handler
+  .on(Log, ({ level, msg, data, context }) => fx(function* () {
     const t = yield* now
-    const { level, msg, data, context } = e.arg
     const c = globalThis.console
     switch (level) {
-      case Level.debug: return resume(c.debug(new Date(t), 'DEBUG', msg, { ...data, ...context }))
-      case Level.warn: return resume(c.warn(new Date(t), 'WARN ', msg, { ...data, ...context }))
-      case Level.error: return resume(c.error(new Date(t), 'ERROR', msg, { ...data, ...context }))
-      default: return resume(c.info(new Date(t), 'INFO ', msg, { ...data, ...context }))
+      case Level.debug: return Handler.resume(c.debug(new Date(t), 'DEBUG', msg, { ...data, ...context }))
+      case Level.warn: return Handler.resume(c.warn(new Date(t), 'WARN ', msg, { ...data, ...context }))
+      case Level.error: return Handler.resume(c.error(new Date(t), 'ERROR', msg, { ...data, ...context }))
+      default: return Handler.resume(c.info(new Date(t), 'INFO ', msg, { ...data, ...context }))
     }
-  })
-})
+  }))
+  .handle(f)
 
-export const collect = <const E, const A>(f: Fx<E, A>) => handle(f, {
-  effects: [Log],
-  initially: ok([] as readonly Readonly<{ time: number, msg: LogMessage }>[]),
-  handle: (e, l) => fx(function* () {
-    return resume(undefined, [...l, { time: yield* now, msg: e.arg }] as const)
-  }),
-  return: (r, l) => [r, l]
-})
+export const collect = <const E, const A>(f: Fx<E, A>) => Handler
+  .initially(ok([] as readonly Readonly<{ time: number, msg: LogMessage }>[]))
+  .on(Log, (message, l) => fx(function* () {
+    return Handler.resume(undefined, [...l, { time: yield* now, msg: message }] as const)
+  }))
+  .handle(f, (r, l) => [r, l] as const)
 
-export const minLevel = (min: Level) => <const E, const A>(f: Fx<E, A>) => handle(f, {
-  effects: [Log],
-  handle: (e) => fx(function* () {
-    return resume(e.arg.level >= min ? yield* e : undefined)
-  })
-})
+export const minLevel = (min: Level) => <const E, const A>(f: Fx<E, A>) => Handler
+  .on(Log, (message) => fx(function* () {
+    return Handler.resume(message.level >= min ? yield* log(message) : undefined)
+  }))
+  .handle(f)
 
-export const context = (context: Record<string, unknown>) => <const E, const A>(f: Fx<E, A>) => handle(f, {
-  effects: [Log],
-  handle: (e) => fx(function* () {
-    return resume(yield* log({ ...e.arg, context: { ...e.arg.context, ...context } }))
-  })
-})
+export const context = (context: Record<string, unknown>) => <const E, const A>(f: Fx<E, A>) => Handler
+  .on(Log, (message) => fx(function* () {
+    return Handler.resume(yield* log({ ...message, context: { ...message.context, ...context } }))
+  }))
+  .handle(f)
 
 export const debug = (msg: string, data?: Record<string, unknown>) => log({ level: Level.debug, msg, data })
 export const info = (msg: string, data?: Record<string, unknown>) => log({ level: Level.info, msg, data })

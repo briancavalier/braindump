@@ -1,5 +1,5 @@
 import { Effect, Fx, fx, is, ok } from '../fx'
-import { control, resume } from '../handler'
+import { Control } from '../handler'
 
 import { Fail, catchFail, fail } from './fail'
 
@@ -11,12 +11,12 @@ export type Resource<E, R> = Readonly<{
   release: (r: R) => Fx<E, void>
 }>
 
-export class Acquire<E> extends Effect('Resource/Acquire')<Resource<E, any>> { }
+export class Acquire<E> extends Effect<'fx/Resource', Resource<E, any>> { }
 
 export const acquire = <const R, const E1, const E2>(
   acquire: Fx<E1, R>,
   release: (r: R) => Fx<E2, void>
-) => new Acquire<E1 | E2>({ acquire, release }).send<R>()
+) => new Acquire<E1 | E2>({ acquire, release }).returning<R>()
 
 export const bracket = <const A, const R, const E1, const E2, const E3>(
   acq: Fx<E1, R>,
@@ -27,13 +27,11 @@ export const bracket = <const A, const R, const E1, const E2, const E3>(
 }))
 
 // Handler to scope resource allocation/release
-export const scope = <const E, const A>(f: Fx<E, A>) => control(f, {
-  effects: [Acquire],
-
-  initially: ok([] as readonly Fx<unknown, unknown>[]),
-
-  handle: (ar, resources) => fx(function* () {
-    const { acquire, release } = ar.arg
+export const scope = <const E, const A>(f: Fx<E, A>) => Control
+  .initially(
+    ok([] as readonly Fx<unknown, unknown>[])
+  )
+  .on(Acquire, ({ acquire, release }, resources) => fx(function* () {
     const a = yield* catchFail(acquire)
 
     if (is(Fail, a)) {
@@ -41,14 +39,15 @@ export const scope = <const E, const A>(f: Fx<E, A>) => control(f, {
       return yield* fail([a.arg, ...failures])
     }
 
-    return resume(a, [release(a), ...resources])
-  }),
-
-  finally: resources => fx(function* () {
-    const failures = yield* releaseSafely(resources)
-    if (failures.length) return yield* fail(failures)
-  })
-}) as Fx<UnwrapAcquire<E>, A>
+    return Control.resume(a, [release(a), ...resources])
+  }))
+  .finally(
+    resources => fx(function* () {
+      const failures = yield* releaseSafely(resources)
+      if (failures.length) return yield* fail(failures)
+    })
+  )
+  .handle(f) as Fx<UnwrapAcquire<E>, A>
 
 const releaseSafely = (resources: readonly Fx<unknown, unknown>[]) => fx(function* () {
   const failures = [] as unknown[]
