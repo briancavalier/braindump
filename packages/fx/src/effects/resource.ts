@@ -11,12 +11,12 @@ export type Resource<E, R> = Readonly<{
   release: (r: R) => Fx<E, void>
 }>
 
-export class Acquire<E> extends Effect('fx/Resource/Acquire')<Resource<E, any>> { }
+export class Acquire<E> extends Effect<'fx/Resource', Resource<E, any>> { }
 
 export const acquire = <const R, const E1, const E2>(
   acquire: Fx<E1, R>,
   release: (r: R) => Fx<E2, void>
-) => new Acquire<E1 | E2>({ acquire, release }).send<R>()
+) => new Acquire<E1 | E2>({ acquire, release }).returning<R>()
 
 export const bracket = <const A, const R, const E1, const E2, const E3>(
   acq: Fx<E1, R>,

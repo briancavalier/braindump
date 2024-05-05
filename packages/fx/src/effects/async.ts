@@ -6,9 +6,9 @@ import { Process } from './fork/process'
 
 type Run<A> = (abort: AbortSignal) => Promise<A>
 
-export class Async extends Effect('Async')<Run<any>> { }
+export class Async extends Effect<'fx/Async', Run<any>> { }
 
-export const run = <const A>(run: Run<A>) => new Async(run).send<A>()
+export const run = <const A>(run: Run<A>) => new Async(run).returning<A>()
 
 export const wait = <const A, const E>(p: Process<A, E>) => fx(function* () {
   const r = yield* run<AsyncResult<A, E>>(

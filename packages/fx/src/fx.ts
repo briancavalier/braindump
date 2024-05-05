@@ -1,26 +1,25 @@
 import { Pipeable, pipe } from './pipe'
 
 export interface EffectType {
-  readonly id: unknown
   new (...args: readonly any[]): any
 }
 
-export const Effect = <const T>(id: T) =>
-  class <A, R = unknown> {
-    public readonly id = id
-    public static readonly id = id
-    public readonly R!: R
+export const EffectId = Symbol()
 
-    send<RR extends R = R>() { return this as Fx<this, RR> }
-    // eslint-disable-next-line prefer-rest-params
-    pipe() { return pipe(this, arguments) }
+export class Effect <T, A, R = unknown> {
+  public readonly [EffectId]!: T
+  public readonly R!: R
 
-    constructor(public readonly arg: A) { }
+  returning<RR extends R = R>() { return this as Fx<this, RR> }
+  // eslint-disable-next-line prefer-rest-params
+  pipe() { return pipe(this, arguments) }
 
-    *[Symbol.iterator](): Iterator<this, unknown, any> {
-      return yield this
-    }
-  } satisfies EffectType
+  constructor(public readonly arg: A) { }
+
+  *[Symbol.iterator](): Iterator<this, R, any> {
+    return yield this
+  }
+}
 
 export interface FxIterable<E, A> {
   [Symbol.iterator](): Iterator<E, A, unknown>
@@ -29,7 +28,7 @@ export interface FxIterable<E, A> {
 export interface Fx<E, A> extends FxIterable<E, A>, Pipeable {}
 
 export const is = <const E extends EffectType>(e: E, x: unknown): x is InstanceType<E> =>
-  !!x && (x as any).id === e.id
+  !!x && (x as any).constructor === e
 
 export const fx = <const E, const A>(f: () => Generator<E, A>): Fx<E, A> => new GenFx(f)
 

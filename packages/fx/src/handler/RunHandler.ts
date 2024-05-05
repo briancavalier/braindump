@@ -16,7 +16,7 @@ export class RunHandler<E, A, S = void> implements Fx<E, A> {
     public readonly fx: Fx<E, A>,
     public readonly forkable: boolean,
     public readonly state: HandlerState<S>,
-    public readonly handlers: ReadonlyMap<PropertyKey, (e: unknown, s: S) => Fx<unknown, Step<unknown, unknown, S>>> = new Map(),
+    public readonly handlers: ReadonlyMap<unknown, (e: unknown, s: S) => Fx<unknown, Step<unknown, unknown, S>>> = new Map(),
     public readonly _initially?: FxIterable<unknown, S>,
     public readonly _finally?: (s: S) => FxIterable<unknown, void>,
     public readonly _return?: (r: A, s: S) => unknown
@@ -35,7 +35,7 @@ export class RunHandler<E, A, S = void> implements Fx<E, A> {
 
       while (!ir.done) {
         if (isEffect(ir.value)) {
-          const handle = handlers.get(ir.value.id) ?? undefined
+          const handle = handlers.get(ir.value.constructor) ?? undefined
           if (handle) {
             const hr: Step<any, any, S> = yield* handle(ir.value.arg, state.value as never) as any
             switch (hr.tag) {
@@ -67,4 +67,4 @@ export class RunHandler<E, A, S = void> implements Fx<E, A> {
   }
 }
 
-const isEffect = <E>(e: E): e is E & { readonly id: PropertyKey; readonly arg: unknown}  => typeof (e as any)?.id === 'string'
+const isEffect = <E>(e: E): e is E & { readonly arg: unknown}  => e && typeof e === 'object' && 'arg' in e //typeof (e as any)?.arg === 'string'

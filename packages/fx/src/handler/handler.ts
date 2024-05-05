@@ -30,7 +30,7 @@ export class BuilderInit {
     e: E,
     f: (e: Arg<E>, s: S) => Fx<OnEffects, Step<Return<E>, R2, S>>
   ): On<OnEffects, InstanceType<E>, S> {
-    return new Builder(this.forkable, new Map().set(e.id as PropertyKey, f))
+    return new Builder(this.forkable, new Map().set(e, f))
   }
 
   static resume<const A>(a: A): Resume<A>
@@ -55,7 +55,7 @@ export class Control extends BuilderInit {
 export class Builder<Add, Remove, S = void> {
   constructor(
     private readonly forkable: boolean,
-    private readonly handlers: ReadonlyMap<PropertyKey, (e: unknown, s: S) => Fx<unknown, Step<unknown, unknown, S>>> = new Map(),
+    private readonly handlers: ReadonlyMap<unknown, (e: unknown, s: S) => Fx<unknown, Step<unknown, unknown, S>>> = new Map(),
     private readonly _initially?: FxIterable<unknown, S>,
     private readonly _finally?: (s: S) => FxIterable<unknown, void>,
   ) { }
@@ -69,7 +69,7 @@ export class Builder<Add, Remove, S = void> {
   }
 
   on<E extends EffectType, OnEffects, R2 = never>(e: E, f: (e: Arg<E>, s: S) => Fx<OnEffects, Step<Return<E>, R2, S>>): On<Add | OnEffects, Remove | InstanceType<E>, S> {
-    const handlers = new Map(this.handlers).set(e.id as PropertyKey, f)
+    const handlers = new Map(this.handlers).set(e, f)
     return new Builder(this.forkable, handlers, this._initially, this._finally) as any
   }
 

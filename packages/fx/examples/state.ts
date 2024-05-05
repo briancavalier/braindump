@@ -4,11 +4,11 @@ import { inspect } from 'util'
 import { Async, Effect, Fork, Fx, Handler, Run, fx, ok } from '../src'
 
 // The usual state monad, implemented as an effect
-class Get<A> extends Effect('Get')<void, A> { }
-class Set<A> extends Effect('Set')<A, void> { }
+class Get<A> extends Effect<'State', void, A> { }
+class Set<A> extends Effect<'State', A, void> { }
 
-const get = <const A>() => new Get<A>().send()
-const set = <const A>(value: A) => new Set(value).send()
+const get = <const A>() => new Get<A>()
+const set = <const A>(value: A) => new Set(value)
 
 // const withState = <const E, const A>(s: StateOf<E>, f: Fx<E, A>) => handleState(s, (a, s) => [a, s] as const, f)
 const runState = <const E, const A>(s: StateOf<E>, f: Fx<E, A>) => handleState(s, a => a, f)

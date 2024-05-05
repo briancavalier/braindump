@@ -1,11 +1,11 @@
 import { Effect, Fx, fx, ok } from '../fx'
 import { Control } from '../handler'
 
-export class Fail<const E> extends Effect('fx/Fail/Fail')<E, never> { }
+export class Fail<const E> extends Effect<'fx/Fail', E, never> { }
 
 export type Failures<E> = E extends Fail<infer A> ? A : never
 
-export const fail = <const E>(e: E) => new Fail(e).send()
+export const fail = <const E>(e: E) => new Fail(e)
 
 export const catchIf = <const F>(match: (x: unknown) => x is F) =>
   <const E, const A>(f: Fx<E, A>) =>

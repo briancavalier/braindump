@@ -10,10 +10,15 @@ import { Process, all as processAll, race as processRace } from './process'
 import { Scope } from './scope'
 import { Semaphore } from './semaphore'
 
-export class Fork extends Effect('fx/Fork/Fork')<Readonly<{ fx: Fx<unknown, unknown>, context: readonly HandlerContext[] }>, Process<unknown, unknown>> {}
+export class Fork extends Effect<'fx/Fork', ForkContext, Process<unknown, unknown>> { }
 
 export const fork = <const E, const A>(fx: Fx<E, A>) =>
-  new Fork({ fx, context: [] }).send() as Fx<Exclude<E, Async | Fail<any>> | Fork, Process<A, Errors<E>>>
+  new Fork({ fx, context: [] }) as Fx<Exclude<E, Async | Fail<any>> | Fork, Process<A, Errors<E>>>
+
+export type ForkContext = Readonly<{
+  fx: Fx<unknown, unknown>,
+  context: readonly HandlerContext[]
+}>
 
 export const all = <Fxs extends readonly Fx<unknown, unknown>[]>(...fxs: Fxs) => fx(function* () {
   const ps = [] as Process<unknown, unknown>[]

@@ -4,13 +4,13 @@ import { createInterface } from 'node:readline/promises'
 
 import { Async, Effect, Fx, Handler, Run, fx, ok, sync } from '../src'
 
-class Print extends Effect('Print')<string, void> { }
+class Print extends Effect<'Print', string, void> { }
 
-const print = (s: string) => new Print(s).send()
+const print = (s: string) => new Print(s)
 
-class Read extends Effect('Read')<string, string> { }
+class Read extends Effect<'Read', string, string> { }
 
-const read = (prompt: string) => new Read(prompt).send()
+const read = (prompt: string) => new Read(prompt)
 
 const main = fx(function* () {
   while(true) {
