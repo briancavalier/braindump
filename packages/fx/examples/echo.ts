@@ -2,7 +2,7 @@
 
 import { createInterface } from 'node:readline/promises'
 
-import { Async, Effect, Fx, Handler, Run, fx, ok, sync } from '../src'
+import { Async, Effect, Fx, Handler, Resource, Run, fx, ok, sync } from '../src'
 
 class Print extends Effect<'Print', string, void> { }
 
@@ -20,27 +20,32 @@ const main = fx(function* () {
   }
 })
 
-const handlePrint = <const E, const A>(f: Fx<E, A>) => Handler
+const handlePrint = <E, A>(f: Fx<E, A>) => Handler
   .on(Print, s => ok(Handler.resume(console.log(s))))
   .handle(f)
 
-const handleRead = <const E, const A>(f: Fx<E, A>) => Handler
-  .initially(sync(() => createInterface({ input: process.stdin, output: process.stdout })))
+const handleRead = <E, A>(f: Fx<E, A>) => Handler
+  .initially(
+    sync(() => createInterface({ input: process.stdin, output: process.stdout }))
+  )
+  .finally(
+    readline => ok(readline.close())
+  )
   .on(Read, (prompt, readline) => fx(function* () {
     const s = yield* Async.run((signal => readline.question(prompt, { signal })))
     return Handler.resume(s, readline)
   }))
-  .finally(readline => ok(readline.close()))
   .handle(f)
 
 // Run with "real" Read and Print effects
-main.pipe(handleRead, handlePrint, Run.async)
+main.pipe(handleRead, handlePrint, Resource.scope, Run.async)
   .promise.then(console.log)
 
 // const handlePrintPure = <E, A>(f: Fx<E, A>) => Handler
 //   .initially(ok([] as readonly string[]))
 //   .on(Print, (s, ss) => ok(Handler.resume(undefined, [...ss, s])))
-//   .handle(f, (_, s) => s)
+//   .handle(f)
+//   .return((_, s) => s)
 
 
 // const handleReadPure = (reads: readonly string[]) => <E, A>(f: Fx<E, A>) => Handler

@@ -15,7 +15,7 @@ export class Acquire<E> extends Effect<'fx/Resource', Resource<E, any>> { }
 
 export const acquire = <const R, const E1, const E2>(
   acquire: Fx<E1, R>,
-  release: (r: R) => Fx<E2, void>
+  release: (r: NoInfer<R>) => Fx<E2, void>
 ) => new Acquire<E1 | E2>({ acquire, release }).returning<R>()
 
 export const bracket = <const A, const R, const E1, const E2, const E3>(
@@ -31,6 +31,12 @@ export const scope = <const E, const A>(f: Fx<E, A>) => Control
   .initially(
     ok([] as readonly Fx<unknown, unknown>[])
   )
+  .finally(
+    resources => fx(function* () {
+      const failures = yield* releaseSafely(resources)
+      if (failures.length) return yield* fail(failures)
+    })
+  )
   .on(Acquire, ({ acquire, release }, resources) => fx(function* () {
     const a = yield* catchFail(acquire)
 
@@ -41,12 +47,6 @@ export const scope = <const E, const A>(f: Fx<E, A>) => Control
 
     return Control.resume(a, [release(a), ...resources])
   }))
-  .finally(
-    resources => fx(function* () {
-      const failures = yield* releaseSafely(resources)
-      if (failures.length) return yield* fail(failures)
-    })
-  )
   .handle(f) as Fx<UnwrapAcquire<E>, A>
 
 const releaseSafely = (resources: readonly Fx<unknown, unknown>[]) => fx(function* () {

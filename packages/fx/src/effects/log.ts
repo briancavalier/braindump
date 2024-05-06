@@ -14,7 +14,7 @@ export enum Level {
 export interface LogMessage {
   level: Level,
   msg: string,
-  data: Record<string, unknown> | undefined,
+  data?: Record<string, unknown> | undefined,
   context?: Record<string, unknown> | undefined
 }
 
@@ -40,7 +40,7 @@ export const collect = <const E, const A>(f: Fx<E, A>) => Handler
   .on(Log, (message, l) => fx(function* () {
     return Handler.resume(undefined, [...l, { time: yield* now, msg: message }] as const)
   }))
-  .handle(f, (r, l) => [r, l] as const)
+  .handle(f, (r, l) => [r, l])
 
 export const minLevel = (min: Level) => <const E, const A>(f: Fx<E, A>) => Handler
   .on(Log, (message) => fx(function* () {

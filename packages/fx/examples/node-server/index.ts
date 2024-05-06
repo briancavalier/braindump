@@ -1,25 +1,24 @@
+import { Env, Fail, Log, Run, Time, fx } from '../../src'
 
-import { Env, Fail, Log, Resource, Run, Time, fx } from '../../src'
-
-import { Connection, serve } from './serve'
+import { Connection, runServer } from './HttpServer'
 
 // ----------------------------------------------------------------------
 // Define the handler for requests
 const myHandler = ({ request, response }: Connection) => fx(function* () {
-  yield* Log.info(`Received request`, { method: request.method, url: request.url })
+  yield* Log.info(`Handling request`, { method: request.method, url: request.url })
+
   response.writeHead(200, { 'Content-Type': 'text/plain' })
-  response.end(`ok`)
+  response.end('Hello, World!')
 })
 
 // ----------------------------------------------------------------------
 // #region Run the server
 const { port = 3000 } = process.env
 
-serve(myHandler).pipe(
-  Env.provide({ port: +port }),
+runServer(myHandler).pipe(
   Log.console,
   Time.builtinDate,
-  Resource.scope,
+  Env.provide({ port: +port }),
   Fail.catchAll,
   Run.async
 )

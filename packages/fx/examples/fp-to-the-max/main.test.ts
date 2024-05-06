@@ -10,12 +10,12 @@ import { Print, RandomInt, Read, checkAnswer, main } from './main'
 // *Pure* handlers for all the effects the game needs.
 // This version of the game is completely pure, with no side effects.
 
-const handlePrint = <const E, const A>(f: Fx<E, A>) => Handler
+const handlePrint = <E, A>(f: Fx<E, A>) => Handler
   .initially(ok([] as readonly string[]))
   .on(Print, (s, ss) => ok(Handler.resume(undefined, [...ss, s])))
   .handle(f, (_, s) => s)
 
-const handleRead = (responses: readonly string[]) => <const E, const A>(f: Fx<E, A>) => Handler
+const handleRead = (responses: readonly string[]) => <E, A>(f: Fx<E, A>) => Handler
   .initially(ok(responses))
   .on(Read, (_, [s, ...ss]) => ok(Handler.resume(s, ss)))
   .handle(f)

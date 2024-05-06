@@ -9,20 +9,24 @@ import { Async, Env, Fx, Handler, Run, fx, ok, sync } from '../../src'
 
 import { Print, RandomInt, Read, main } from './main'
 
-const handlePrint = <const E, const A>(f: Fx<E, A>) => Handler
+const handlePrint = <E, A>(f: Fx<E, A>) => Handler
   .on(Print, s => ok(Handler.resume(console.log(s))))
   .handle(f)
 
-const handleRead = <const E, const A>(f: Fx<E, A>) => Handler
-  .initially(sync(() => createInterface({ input: process.stdin, output: process.stdout })))
+const handleRead = <E, A>(f: Fx<E, A>) => Handler
+  .initially(
+    sync(() => createInterface({ input: process.stdin, output: process.stdout }))
+  )
+  .finally(
+    readline => ok(readline.close())
+  )
   .on(Read, (prompt, readline) => fx(function* () {
     const s = yield* Async.run((signal => readline.question(prompt, { signal })))
     return Handler.resume(s, readline)
   }))
-  .finally(readline => ok(readline.close()))
   .handle(f)
 
-const handleRandom = <const E, const A>(f: Fx<E, A>) => Handler
+const handleRandom = <E, A>(f: Fx<E, A>) => Handler
   .on(RandomInt, ({ min, max }) => {
     const n = Math.floor(Math.random() * (max - min + 1)) + min
     return ok(Handler.resume(n))

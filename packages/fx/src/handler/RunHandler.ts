@@ -3,20 +3,20 @@ import { Fork } from '../effects/fork/fork'
 import { Fx, FxIterable, is } from '../fx'
 import { pipe } from '../pipe'
 
-import { Step } from './Continuation'
+import { Continue } from './Continuation'
 
-export type HandlerState<S> = {
+type HandlerState<S> = {
   value: S | undefined
 }
 
-export type HandlerContext = RunHandler<unknown, unknown, unknown>
+export type HandlerContext = HandlerFx<unknown, unknown, unknown>
 
-export class RunHandler<E, A, S = void> implements Fx<E, A> {
+export class HandlerFx<E, A, S = void> implements Fx<E, A> {
   constructor(
     public readonly fx: Fx<E, A>,
     public readonly forkable: boolean,
     public readonly state: HandlerState<S>,
-    public readonly handlers: ReadonlyMap<unknown, (e: unknown, s: S) => Fx<unknown, Step<unknown, unknown, S>>> = new Map(),
+    public readonly handlers: ReadonlyMap<unknown, (e: unknown, s: S) => Fx<unknown, Continue<unknown, unknown, S>>> = new Map(),
     public readonly _initially?: FxIterable<unknown, S>,
     public readonly _finally?: (s: S) => FxIterable<unknown, void>,
     public readonly _return?: (r: A, s: S) => unknown
@@ -37,7 +37,7 @@ export class RunHandler<E, A, S = void> implements Fx<E, A> {
         if (isEffect(ir.value)) {
           const handle = handlers.get(ir.value.constructor) ?? undefined
           if (handle) {
-            const hr: Step<any, any, S> = yield* handle(ir.value.arg, state.value as never) as any
+            const hr: Continue<any, any, S> = yield* handle(ir.value.arg, state.value as never) as any
             switch (hr.tag) {
               case 'return':
                 return _return ? _return(hr.value, state.value as never) : hr.value
