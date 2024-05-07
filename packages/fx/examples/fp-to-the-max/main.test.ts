@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 
-import { Env, Fx, Handler, Run, ok } from '../../src'
+import { Env, Fx, Run, fx, handle, map, ok, resume } from '../../src'
 
 import { Print, RandomInt, Read, checkAnswer, main } from './main'
 
@@ -10,20 +10,19 @@ import { Print, RandomInt, Read, checkAnswer, main } from './main'
 // *Pure* handlers for all the effects the game needs.
 // This version of the game is completely pure, with no side effects.
 
-const handlePrint = <E, A>(f: Fx<E, A>) => Handler
-  .initially(ok([] as readonly string[]))
-  .on(Print, (s, ss) => ok(Handler.resume(undefined, [...ss, s])))
-  .handle(f, (_, s) => s)
+const handlePrint = <E, A>(f: Fx<E, A>) => fx(function* () {
+  const printed = [] as string[]
+  return yield* f.pipe(
+    handle(Print, s => ok(resume(void printed.push(s)))),
+    map(() => printed)
+  )
+})
 
-const handleRead = (responses: readonly string[]) => <E, A>(f: Fx<E, A>) => Handler
-  .initially(ok(responses))
-  .on(Read, (_, [s, ...ss]) => ok(Handler.resume(s, ss)))
-  .handle(f)
+const handleRead = ([...inputs]: readonly string[]) =>
+  handle(Read, () => ok(resume(inputs.shift()!)))
 
-const handleRandom = (values: readonly number[]) => <const E, const A>(f: Fx<E, A>) => Handler
-.initially(ok(values))
-.on(RandomInt, ({ min, max }, [n, ...rest]) => ok(Handler.resume(Math.max(min, Math.min(max, n)), [...rest, n])))
-.handle(f)
+const handleRandom = ([...values]: readonly number[]) =>
+  handle(RandomInt, ({ min, max }) => ok(resume(Math.max(min, Math.min(max, values.shift()!)))))
 
 // #endregion
 // -------------------------------------------------------------------
@@ -55,6 +54,7 @@ describe('main', () => {
     const result = main.pipe(
       handleRandom(secretNumbers),
       handleRead(['Brian', '1', 'y', '2', 'y', '3', 'y', '1', 'n']),
+      x => x,
       handlePrint,
       Env.provide(range),
       Run.sync

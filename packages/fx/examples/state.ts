@@ -1,9 +1,9 @@
 import { setTimeout } from 'timers/promises'
 import { inspect } from 'util'
 
-import { Async, Effect, Fork, Fx, Handler, Run, fx, ok } from '../src'
+import { Async, Effect, Fork, Fx, Run, fx, handle, map, ok, resume } from '../src'
 
-// The usual state monad, implemented as an effect
+// The usual state monad, as an effect
 class Get<A> extends Effect<'State', void, A> { }
 class Set<A> extends Effect<'State', A, void> { }
 
@@ -14,11 +14,17 @@ const set = <const A>(value: A) => new Set(value)
 const runState = <const E, const A>(s: StateOf<E>, f: Fx<E, A>) => handleState(s, a => a, f)
 // const getState = <const E, const A>(s: StateOf<E>, f: Fx<E, A>) => handleState(s, (_, s) => s, f)
 
-const handleState = <const E, const A, const R, const S = StateOf<E>>(s: S, r: (a: A, s: S) => R, f: Fx<E, A>) => Handler
-  .initially(ok(s))
-  .on(Get, (_, s) => ok(Handler.resume(s, s)))
-  .on(Set, (s) => ok(Handler.resume(undefined, s as S)))
-  .handle(f, r) as Fx<Exclude<E, Get<StateOf<E>> | Set<StateOf<E>>>, R>
+const handleState = <const E, const A, const R, const S = StateOf<E>>(s: S, r: (a: A, s: S) => R, f: Fx<E, A>) => fx(function* () {
+  let state = s
+  return yield* f.pipe(
+    handle(Get, () => ok(resume(state))),
+    handle(Set, newState => {
+      state = newState as S
+      return ok(resume(undefined))
+    }),
+    map(a => r(a, state))
+  ) as Fx<Exclude<E, Get<StateOf<E>> | Set<StateOf<E>>>, R>
+})
 
 type StateOf<E> = U2I<_StateOf<E>>
 type _StateOf<E> = E extends Get<infer S> | Set<infer S> ? S : never

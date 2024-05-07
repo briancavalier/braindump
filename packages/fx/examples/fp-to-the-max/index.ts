@@ -3,35 +3,32 @@
 // The type system will prevent running the game until implementations
 // of all capabilities have been provided.
 
-import { createInterface } from 'readline/promises'
+import { createInterface } from 'node:readline/promises'
 
-import { Async, Env, Fx, Handler, Run, fx, ok, sync } from '../../src'
+import { Async, Env, Fx, Resource, Run, fx, handle, ok, resume, sync } from '../../src'
 
 import { Print, RandomInt, Read, main } from './main'
 
-const handlePrint = <E, A>(f: Fx<E, A>) => Handler
-  .on(Print, s => ok(Handler.resume(console.log(s))))
-  .handle(f)
+const handlePrint = handle(Print, s => ok(resume(console.log(s))))
 
-const handleRead = <E, A>(f: Fx<E, A>) => Handler
-  .initially(
-    sync(() => createInterface({ input: process.stdin, output: process.stdout }))
+const handleRead = <E, A>(f: Fx<E, A>) => fx(function* () {
+  const readline = yield* Resource.acquire(
+    ok(createInterface({ input: process.stdin, output: process.stdout })),
+    (readline) => sync(() => readline.close())
   )
-  .finally(
-    readline => ok(readline.close())
-  )
-  .on(Read, (prompt, readline) => fx(function* () {
-    const s = yield* Async.run((signal => readline.question(prompt, { signal })))
-    return Handler.resume(s, readline)
-  }))
-  .handle(f)
 
-const handleRandom = <E, A>(f: Fx<E, A>) => Handler
-  .on(RandomInt, ({ min, max }) => {
-    const n = Math.floor(Math.random() * (max - min + 1)) + min
-    return ok(Handler.resume(n))
-  })
-  .handle(f)
+  return yield* f.pipe(
+    handle(Read, prompt => fx(function* () {
+      const s = yield* Async.run((signal => readline.question(prompt, { signal })))
+      return resume(s)
+    }))
+  )
+})
+
+const handleRandom = handle(RandomInt, ({ min, max }) => {
+  const n = Math.floor(Math.random() * (max - min + 1)) + min
+  return ok(resume(n))
+})
 
 const { min = 1, max = 10 } = process.env
 
@@ -40,5 +37,6 @@ main.pipe(
   handleRandom,
   handlePrint,
   handleRead,
+  Resource.scope,
   Run.async
 )

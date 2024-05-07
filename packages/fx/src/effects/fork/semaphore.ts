@@ -18,7 +18,7 @@ export class Semaphore {
   }
 }
 
-interface Acquiring {
+export interface Acquiring {
   promise: Promise<void>,
   [Symbol.dispose](): void
 }

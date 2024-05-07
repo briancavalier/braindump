@@ -1,6 +1,6 @@
 import { IncomingMessage, Server, ServerResponse, createServer } from 'http'
 
-import { Async, Effect, Env, Fork, Fx, Handler, Log, fx, ok } from '../../src'
+import { Async, Effect, Env, Fork, Fx, fx, handle, resume } from '../../src'
 
 //----------------------------------------------------------------------
 // Http Server example
@@ -22,36 +22,35 @@ export type Connection = Readonly<{ request: IncomingMessage; response: ServerRe
 // Runs a node server as a handler, with initially/finally to manage
 // the server lifecycle
 
-export const serveNode = <E, A>(f: Fx<E, A>) => Handler
-  .initially(fx(function* () {
-    const { port } = yield* Env.get<{ port: number }>()
-    return createServer().listen(port)
-  }))
-  .finally(
-    server => ok(void server.close())
-  )
-  .on(NextRequest, (_, server) => fx(function* () {
-    const close = () => server.close()
+export const serveNode = <E, A>(f: Fx<E, A>) => fx(function* () {
+  const { port } = yield* Env.get<{ port: number }>()
+  const server = createServer().listen(port)
 
-    const connection = yield* Async.run((signal) => {
-      signal.addEventListener('abort', close, { once: true })
-      return getNextRequest(server)
-        .finally(() => signal.removeEventListener('abort', close))
-    })
+  try {
+    return yield* f.pipe(
+      handle(NextRequest, () => fx(function* () {
+        const close = () => server.close()
 
-    return Handler.resume(connection, server)
-  }))
-  .handle(f)
+        const connection = yield* Async.run((signal) => {
+          signal.addEventListener('abort', close, { once: true })
+          return getNextRequest(server)
+            .finally(() => signal.removeEventListener('abort', close))
+        })
+
+        return resume(connection)
+      }))
+    )
+  } finally {
+    server.close()
+  }
+})
 
 export const runServer = <E, A>(
-  handle: (c: Connection) => Fx<E, A>
+  handleRequest: (c: Connection) => Fx<E, A>
 ) => serveNode(fx(function* () {
   while(true) {
     const next = yield* nextRequest
-    yield* Fork.fork(Handler
-      .initially(Log.info(`Received ${next.request.method} ${next.request.url}`, { headers: next.request.headers }))
-      .finally(() => Log.info(`Handled ${next.request.method} ${next.request.url} ${next.response.statusCode}`, next.response.getHeaders()))
-      .handle(handle(next)))
+    yield* Fork.fork(handleRequest(next))
   }
 }))
 
