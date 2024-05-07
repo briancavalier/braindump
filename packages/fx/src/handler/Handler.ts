@@ -1,5 +1,5 @@
 // eslint-disable-next-line import/no-cycle
-import { Fork } from '../effects/fork/temp'
+import { Fork } from '../effects/fork/Fork'
 import { EffectType, EffectTypeId, Fx, FxTypeId, is } from '../fx'
 import { Pipeable, pipe } from '../internal/pipe'
 
