@@ -5,13 +5,11 @@ export interface EffectType {
   new (...args: readonly any[]): any
 }
 
-export const FxTypeId = Symbol()
 export const EffectTypeId = Symbol()
-export const EffectId = Symbol()
 
 export class Effect <T, A, R = unknown> implements Pipeable {
-  public readonly [FxTypeId] = EffectTypeId
-  public readonly [EffectId]!: T
+  public readonly _fxTypeId = EffectTypeId
+  public readonly _fxEffectId!: T
   public readonly R!: R
 
   returning<RR extends R>() { return this as Fx<this, RR> }
@@ -24,6 +22,9 @@ export class Effect <T, A, R = unknown> implements Pipeable {
     return new Once<this, R>(this)
   }
 }
+
+export const isEffect = <E>(e: E): e is E & Effect<unknown, unknown, unknown>  =>
+  !!e && (e as any)._fxTypeId === EffectTypeId
 
 export interface FxIterable<E, A> {
   [Symbol.iterator](): Iterator<E, A, unknown>
