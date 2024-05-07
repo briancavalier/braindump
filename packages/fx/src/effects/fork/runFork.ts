@@ -5,10 +5,10 @@ import { HandlerContext } from '../../handler/HandlerContext'
 import { Async } from '../async'
 import { Fail, Failures } from '../fail'
 
-import { Fork } from './Fork'
 import { Process } from './process'
 import { Scope } from './scope'
 import { Semaphore } from './semaphore'
+import { Fork } from './temp'
 
 export const bounded = (maxConcurrency: number) => <const E, const A>(f: Fx<E, A>) => fx(function* () {
     const s = new Semaphore(maxConcurrency)

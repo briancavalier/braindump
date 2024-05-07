@@ -1,8 +1,7 @@
 import { Async } from './effects/async'
 import { provideAll } from './effects/env'
-import { Fork } from './effects/fork/Fork'
+import { Fork, runFork } from './effects/fork'
 import { Process } from './effects/fork/process'
-import { runFork } from './effects/fork/runFork'
 import { Semaphore } from './effects/fork/semaphore'
 import { Fx } from './fx'
 
