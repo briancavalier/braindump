@@ -1,4 +1,3 @@
-import { inspect } from 'node:util'
 
 import { Fx, fx, is, ok } from '../../fx'
 import { Handler, handle, resume } from '../../handler'
@@ -48,7 +47,7 @@ export const runFork = <const E, const A>(f: Fx<E, A>, s: Semaphore): Process<A,
         ir = i.next(p)
       }
       else if (is(Fail, ir.value)) return reject(ir.value.arg)
-      else return reject(new Error(`Unexpected effect in forked Fx: ${inspect(ir.value)} ${inspect(f)}`))
+      else return reject(new Error(`Unexpected effect in forked Fx: ${ir.value}`))
     }
     resolve(ir.value as A)
   }).finally(() => scope[Symbol.dispose]()))
@@ -56,7 +55,7 @@ export const runFork = <const E, const A>(f: Fx<E, A>, s: Semaphore): Process<A,
   return new Process(promise, scope)
 }
 
-export const acquire = <A>(s: Semaphore, scope: Scope, f: () => Promise<A>) => {
+const acquire = <A>(s: Semaphore, scope: Scope, f: () => Promise<A>) => {
   const a = s.acquire()
   scope.add(a)
   return a.promise.then(f).finally(() => {

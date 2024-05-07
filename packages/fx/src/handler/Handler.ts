@@ -54,10 +54,7 @@ export class Handler<E, A> implements Fx<E, A>, Pipeable {
             else ir = i.next(hr.value)
           }
           else if (is(Fork, ir.value))
-            ir = i.next(yield new Fork({
-              fx: ir.value.arg.fx,
-              context: [...ir.value.arg.context, this]
-            }) as any)
+            ir = i.next(yield new Fork({ fx: ir.value.arg.fx, context: [...ir.value.arg.context, this] }) as any)
           else
             ir = i.next(yield ir.value as any)
         }
@@ -70,10 +67,10 @@ export class Handler<E, A> implements Fx<E, A>, Pipeable {
   }
 }
 
+export const isHandler = (e: unknown): e is Handler<unknown, unknown> =>
+  !!e && (e as any)[FxTypeId] === HandlerTypeId
+
 const isEffect = <E>(e: E): e is E & { readonly arg: unknown } =>
   !!e && (e as any)[FxTypeId] === EffectTypeId
-
-const isHandler = (e: unknown): e is Handler<unknown, unknown> =>
-  !!e && (e as any)[FxTypeId] === HandlerTypeId
 
 const empty = new Map() as Map<never, never>
