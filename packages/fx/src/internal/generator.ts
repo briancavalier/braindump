@@ -1,4 +1,4 @@
-import { Pipeable, pipe } from '../pipe'
+import { Pipeable, pipe } from './pipe'
 
 export class Once<Y, R> implements Generator<Y, R>, Pipeable {
   private called = false

@@ -1,8 +1,7 @@
 
-
 import { createInterface } from 'node:readline/promises'
 
-import { Async, Effect, Fx, Handler, Resource, Run, fx, ok, sync } from '../src'
+import { Async, Effect, Fx, Resource, Run, fx, handle, ok, resume, sync } from '../src'
 
 class Print extends Effect<'Print', string, void> { }
 
@@ -20,38 +19,35 @@ const main = fx(function* () {
   }
 })
 
-const handlePrint = <E, A>(f: Fx<E, A>) => Handler
-  .on(Print, s => ok(Handler.resume(console.log(s))))
-  .handle(f)
+const handlePrint = handle(Print, s => ok(resume(console.log(s))))
 
-const handleRead = <E, A>(f: Fx<E, A>) => Handler
-  .initially(
-    sync(() => createInterface({ input: process.stdin, output: process.stdout }))
+const handleRead = <E, A>(f: Fx<E, A>) => fx(function* () {
+  const readline = yield* Resource.acquire(
+    ok(createInterface({ input: process.stdin, output: process.stdout })),
+    readline => sync(() => readline.close())
   )
-  .finally(
-    readline => ok(readline.close())
-  )
-  .on(Read, (prompt, readline) => fx(function* () {
-    const s = yield* Async.run((signal => readline.question(prompt, { signal })))
-    return Handler.resume(s, readline)
-  }))
-  .handle(f)
+
+  return yield* f.pipe(
+    handle(Read, prompt => fx(function* () {
+      const s = yield* Async.run(signal => readline.question(prompt, { signal }))
+      return resume(s)
+    })))
+})
 
 // Run with "real" Read and Print effects
 main.pipe(handleRead, handlePrint, Resource.scope, Run.async)
   .promise.then(console.log)
 
-// const handlePrintPure = <E, A>(f: Fx<E, A>) => Handler
-//   .initially(ok([] as readonly string[]))
-//   .on(Print, (s, ss) => ok(Handler.resume(undefined, [...ss, s])))
-//   .handle(f)
-//   .return((_, s) => s)
+// const handlePrintPure = <E, A>(f: Fx<E, A>) => fx(function* () {
+//   const printed = [] as string[]
+//   return yield* f.pipe(
+//     handle(Print, s => ok(resume(void printed.push(s)))),
+//     map(() => printed)
+//   )
+// })
 
-
-// const handleReadPure = (reads: readonly string[]) => <E, A>(f: Fx<E, A>) => Handler
-//   .initially(ok(reads))
-//   .on(Read, (_, [s, ...ss]) => ok(Handler.resume(s, ss)))
-//   .handle(f)
+// const handleReadPure = ([...inputs]: readonly string[]) =>
+//   handle(Read, () => ok(resume(inputs.shift()!)))
 
 // // Run with pure Read and Print effects that only collect input and output
 // main.pipe(handlePrintPure, handleReadPure(['a', 'b', 'c']), Run.async)

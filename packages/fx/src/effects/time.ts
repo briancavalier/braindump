@@ -1,11 +1,8 @@
-import { Effect, Fx, ok } from '../fx'
-import { Handler } from '../handler/Handler'
+import { Effect, ok } from '../fx'
+import { handle, resume } from '../handler'
 
 export class Now extends Effect<'fx/Time', void, number> { }
 
 export const now = new Now()
 
-export const builtinDate = <const E, const A>(f: Fx<E, A>) =>
-  Handler
-    .on(Now, () => ok(Handler.resume(Date.now())))
-    .handle(f)
+export const builtinDate = handle(Now, () => ok(resume(Date.now())))

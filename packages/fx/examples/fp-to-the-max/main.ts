@@ -37,8 +37,8 @@ export const checkAnswer = (secret: number, guess: number): boolean =>
 
 // Main game loop. Play round after round until the user chooses to quit
 export const main = fx(function* () {
-  const name = yield* read('What is your name? ')
-  yield* print(`Hello, ${name} welcome to the game!`)
+  const name = yield* read(`What's your name? `)
+  yield* print(`Hello, ${name}. welcome to the game!`)
 
   const range = yield* Env.get<Range>()
 

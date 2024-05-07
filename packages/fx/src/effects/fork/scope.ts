@@ -1,4 +1,3 @@
-
 export class Scope {
   private _disposed = false;
   private readonly disposables = [] as Disposable[]

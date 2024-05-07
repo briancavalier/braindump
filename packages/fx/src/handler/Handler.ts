@@ -1,77 +1,76 @@
-import { EffectType, Fx, FxIterable } from '../fx'
-
-import { Continue, Resume } from './Continuation'
 // eslint-disable-next-line import/no-cycle
-import { HandlerFx } from './RunHandler'
+import { Fork } from '../effects/fork/Fork'
+import { EffectType, Fx, is } from '../fx'
+import { Pipeable, pipe } from '../internal/pipe'
 
-type Handled<Add, Remove, S, Interface> = {
-  readonly [K in Extract<keyof Builder<Add, Remove, S>, Interface>]: Builder<Add, Remove, S>[K]
-}
-
-type Initially<Add, Remove, S> = Handled<Add, Remove, S, 'on' | 'finally' | 'handle'>
-type On<Add, Remove, S> = Handled<Add, Remove, S, 'on' | 'handle'>
-type Finally<Add, Remove, S> = Handled<Add, Remove, S, 'on' | 'handle'>
+import { Continue, Resume } from './Continue'
 
 type Return<E extends EffectType> = InstanceType<E>['R']
 type Arg<E extends EffectType> = InstanceType<E>['arg']
 
-export class Handler {
-  static readonly forkable: boolean = true
+export const resume  = <const A> (value: A) => ({ done: false, value } as const)
 
-  static initially<InitialEffects, S>(i: FxIterable<InitialEffects, S>): Initially<InitialEffects, never, S> {
-    return new Builder(this.forkable, new Map(), i)
+export const done = <const A> (value: A) => ({ done: true, value } as const)
+
+export const handle = <T extends EffectType, OnEffects, R2 = never> (e: T, f: (e: Arg<T>) => Fx<OnEffects, Resume<Return<T>>>) =>
+  <const E, const A>(fx: Fx<E, A>) => {
+    if(fx instanceof Handler)
+      return new Handler(fx, fx.forkable && true, new Map(fx.handlers).set(e, f)) as Handler<Exclude<E, InstanceType<T>> | OnEffects, A | R2>
+
+    else return new Handler(fx, true, new Map().set(e, f)) as Handler<Exclude<E, InstanceType<T>> | OnEffects, A | R2>
   }
 
-  static finally<FinalEffects>(f: () => FxIterable<FinalEffects, void>): Finally<FinalEffects, never, void> {
-    return new Builder(this.forkable, new Map(), undefined, f)
+export const control = <T extends EffectType, OnEffects, R2 = never>(e: T, f: (e: Arg<T>) => Fx<OnEffects, Continue<Return<T>, R2>>) =>
+  <const E, const A>(fx: Fx<E, A>) => {
+    if (fx instanceof Handler)
+      return new Handler(fx, fx.forkable && true, new Map(fx.handlers).set(e, f)) as Handler<Exclude<E, InstanceType<T>> | OnEffects, A | R2>
+
+    else return new Handler(fx, false, new Map().set(e, f)) as Handler<Exclude<E, InstanceType<T>> | OnEffects, A | R2>
   }
 
-  static on<E extends EffectType, OnEffects, S, R2 = never>(
-    e: E,
-    f: (e: Arg<E>, s: S) => Fx<OnEffects, Continue<Return<E>, R2, S>>
-  ): On<OnEffects, InstanceType<E>, S> {
-    return new Builder(this.forkable, new Map().set(e, f))
-  }
-
-  static resume<const A>(a: A): Resume<A>
-  static resume<const A, const S>(a: A, s: S): Resume<A, S>
-  static resume<const A, const S>(a: A, s?: S): Resume<A, void | S> {
-    return ({ tag: 'resume', value: a, state: s }) as const
-  }
-
-  static done<const A>(a: A): Continue<never, A, never>{
-    return ({ tag: 'return', value: a })
-  }
-}
-
-export class Control extends Handler {
-  static readonly forkable = false
-}
-
-export class Builder<Add, Remove, S = void> {
+export class Handler<E, A> implements Fx<E, A>, Pipeable {
   constructor(
-    private readonly forkable: boolean,
-    private readonly handlers: ReadonlyMap<unknown, (e: unknown, s: S) => Fx<unknown, Continue<unknown, unknown, S>>> = new Map(),
-    private readonly _initially?: FxIterable<unknown, S>,
-    private readonly _finally?: (s: S) => FxIterable<unknown, void>,
+    public readonly fx: Fx<E, A>,
+    public readonly forkable: boolean,
+    public readonly handlers: ReadonlyMap<unknown, (e: unknown) => Fx<unknown, Continue<unknown, unknown>>> = new Map()
   ) { }
 
-  initially<InitialEffects, S>(i: FxIterable<InitialEffects, S>): Initially<InitialEffects | Add, Remove, S> {
-    return new Builder(this.forkable, this.handlers as any, i as any, this._finally as any)
-  }
+  // eslint-disable-next-line prefer-rest-params
+  pipe() { return pipe(this, arguments) }
 
-  finally<FinalEffects>(f: (s: S) => FxIterable<FinalEffects, void>): Finally<Add | FinalEffects, Remove, S> {
-    return new Builder(this.forkable, this.handlers, this._initially, f)
-  }
+  *[Symbol.iterator](): Iterator<E, A> {
+    const { handlers, fx } = this
+    const i = fx[Symbol.iterator]()
 
-  on<E extends EffectType, OnEffects, R2 = never>(e: E, f: (e: Arg<E>, s: S) => Fx<OnEffects, Continue<Return<E>, R2, S>>): On<Add | OnEffects, Remove | InstanceType<E>, S> {
-    const handlers = new Map(this.handlers).set(e, f)
-    return new Builder(this.forkable, handlers, this._initially, this._finally) as any
-  }
+    try {
+      let ir = i.next()
 
-  handle<E, A, const R>(fx: Fx<E, A>, r: (r: A, s: S) => R): Fx<Add | Exclude<E, Remove>, R>
-  handle<E, A>(fx: Fx<E, A>): Fx<Add | Exclude<E, Remove>, A>
-  handle<E, A, const R>(fx: Fx<E, A>, r?: (r: A, s: S) => R): Fx<Add | Exclude<E, Remove>, A | R> {
-    return new HandlerFx(fx, this.forkable, { value: undefined }, this.handlers, this._initially, this._finally, r)
+      while (!ir.done) {
+        if (isEffect(ir.value)) {
+          const handle = handlers.get(ir.value.constructor) ?? undefined
+          if (handle) {
+            const hr: Continue<any, any> = yield* handle(ir.value.arg) as any
+            if(hr.done) return hr.value
+            else ir = i.next(hr.value)
+          }
+          else if (is(Fork, ir.value))
+            ir = i.next(yield new Fork({
+              fx: ir.value.arg.fx,
+              context: [...ir.value.arg.context, this as any]
+            }) as any)
+
+
+          else
+            ir = i.next(yield ir.value as any)
+        }
+      }
+
+      return ir.value
+    } finally {
+      if (i.return) i.return()
+    }
   }
 }
+
+const isEffect = <E>(e: E): e is E & { readonly arg: unknown } =>
+  e && typeof e === 'object' && 'arg' in e //typeof (e as any)?.arg === 'string'
