@@ -18,14 +18,6 @@ export const acquire = <const R, const E1, const E2>(
   release: (r: R) => Fx<E2, void>
 ) => new Acquire<E1 | E2>({ acquire, release }).returning<R>()
 
-export const bracket = <const A, const R, const E1, const E2, const E3>(
-  acq: Fx<E1, R>,
-  rel: (r: R) => Fx<E2, void>,
-  use: (r: R) => Fx<E3, A>
-) => scope(fx(function* () {
-  return yield* use(yield* acquire(acq, rel))
-}))
-
 // Handler to scope resource allocation/release
 export const scope = <const E, const A>(f: Fx<E, A>) => fx(function* () {
   const resources = [] as Fx<unknown, unknown>[]
