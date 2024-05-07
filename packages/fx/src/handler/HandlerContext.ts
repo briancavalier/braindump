@@ -1,8 +1,8 @@
 import { Fx } from '../fx'
-import { Continue } from './Continue'
 
+import { Continue, Resume } from './Continue'
 
 export interface HandlerContext extends Fx<unknown, unknown> {
-  readonly forkable: boolean
-  readonly handlers: ReadonlyMap<unknown, (e: unknown) => Fx<unknown, Continue<unknown, unknown>>>
+  readonly handlers: ReadonlyMap<unknown, (e: unknown) => Fx<unknown, Resume<unknown>>>
+  readonly controls: ReadonlyMap<unknown, (e: unknown) => Fx<unknown, Continue<unknown, unknown>>>
 }

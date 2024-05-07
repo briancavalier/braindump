@@ -2,7 +2,7 @@ import { Fx, fx } from '../../fx'
 import { Async } from '../async'
 import { Fail } from '../fail'
 
-import { EffectsOf, Errors, Fork, ResultOf, fork } from './Fork'
+import { EffectsOf, ErrorsOf, Fork, ResultOf, fork } from './Fork'
 import { Process, all as processAll } from './process'
 
 export const all = <Fxs extends readonly Fx<unknown, unknown>[]>(...fxs: Fxs) => fx(function* () {
@@ -11,4 +11,4 @@ export const all = <Fxs extends readonly Fx<unknown, unknown>[]>(...fxs: Fxs) =>
   return processAll(...ps)
 }) as Fx<Exclude<EffectsOf<Fxs[number]>, Async | Fail<any>> | Fork, Process<{
   readonly [K in keyof Fxs]: ResultOf<Fxs[K]>
-}, Errors<EffectsOf<Fxs[number]>>>>
+}, ErrorsOf<EffectsOf<Fxs[number]>>>>

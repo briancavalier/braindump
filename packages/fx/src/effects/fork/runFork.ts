@@ -1,3 +1,5 @@
+import { inspect } from 'node:util'
+
 import { Fx, fx, is, ok } from '../../fx'
 import { Handler, handle, resume } from '../../handler'
 import { HandlerContext } from '../../handler/HandlerContext'
@@ -46,7 +48,7 @@ export const runFork = <const E, const A>(f: Fx<E, A>, s: Semaphore): Process<A,
         ir = i.next(p)
       }
       else if (is(Fail, ir.value)) return reject(ir.value.arg)
-      else return reject(new Error(`Unexpected effect in forked Fx: ${JSON.stringify(ir.value)}`))
+      else return reject(new Error(`Unexpected effect in forked Fx: ${inspect(ir.value)} ${inspect(f)}`))
     }
     resolve(ir.value as A)
   }).finally(() => scope[Symbol.dispose]()))
@@ -69,11 +71,7 @@ const runProcess = <A>(run: (s: AbortSignal) => Promise<A>) => {
 }
 
 const withContext = (c: readonly HandlerContext[], f: Fx<unknown, unknown>) =>
-  c.reduce((f, handler) =>
-    handler.forkable
-      ? new Handler(f, true, handler.handlers)
-      : f,
-    f)
+  c.reduce((f, handler) => new Handler(f, handler.handlers, new Map()), f)
 
 class AbortControllerDisposable {
   constructor(private readonly controller: AbortController) { }

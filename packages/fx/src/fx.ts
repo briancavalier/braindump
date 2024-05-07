@@ -5,9 +5,12 @@ export interface EffectType {
   new (...args: readonly any[]): any
 }
 
+export const FxTypeId = Symbol()
+export const EffectTypeId = Symbol()
 export const EffectId = Symbol()
 
 export class Effect <T, A, R = unknown> implements Pipeable {
+  public readonly [FxTypeId] = EffectTypeId
   public readonly [EffectId]!: T
   public readonly R!: R
 
