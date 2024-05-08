@@ -46,13 +46,13 @@ const f = fx(function* () {
 })
 
 const main1 = fx(function* () {
-  const r1 = yield* Fork.all(f, f)
+  const r1 = yield* Fork.all([f, f])
   const r3 = yield* Async.wait(r1)
   return r3
 })
 
 const main2 = fx(function* () {
-  const r1 = yield* Fork.all(runState(1, f), runState(1, f))
+  const r1 = yield* Fork.all([runState(1, f), runState(1, f)], 'concurrent state')
   const r3 = yield* Async.wait(r1)
   return r3
 })

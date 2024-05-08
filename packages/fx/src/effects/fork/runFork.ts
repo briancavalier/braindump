@@ -3,7 +3,7 @@ import { Fx, fx, is, ok } from '../../fx'
 import { Handler, handle, resume } from '../../handler'
 import { HandlerContext } from '../../handler/HandlerContext'
 import { Async } from '../async'
-import { Fail, Failures } from '../fail'
+import { Fail, UnwrapFail } from '../fail'
 
 import { Fork } from './Fork'
 import { Task } from './Task'
@@ -13,13 +13,13 @@ import { Semaphore } from './semaphore'
 export const bounded = (maxConcurrency: number) => <const E, const A>(f: Fx<E, A>) => fx(function* () {
     const s = new Semaphore(maxConcurrency)
     return yield* f.pipe(
-      handle(Fork, ({ fx, context }) => ok(resume(runFork(withContext(context, fx), s))))
+      handle(Fork, ({ fx, context, name }) => ok(resume(runFork(withContext(context, fx), s, name))))
     )
-  }) as Fx<Exclude<E, Async | Fail<any>>, Task<A, Failures<E>>>
+  }) as Fx<Exclude<E, Async | Fail<any>>, Task<A, UnwrapFail<E>>>
 
 export const unbounded = bounded(Infinity)
 
-export const runFork = <const E, const A>(f: Fx<E, A>, s: Semaphore): Task<A, Failures<E>> => {
+export const runFork = <const E, const A>(f: Fx<E, A>, s: Semaphore, name = '?'): Task<A, UnwrapFail<E>> => {
   const scope = new Scope()
 
   const promise = acquire(s, scope, () => new Promise<A>(async (resolve, reject) => {
@@ -29,30 +29,37 @@ export const runFork = <const E, const A>(f: Fx<E, A>, s: Semaphore): Task<A, Fa
 
     while (!ir.done) {
       if (is(Async, ir.value)) {
-        const p = runProcess(ir.value.arg)
+        const p = runTask(ir.value.arg)
         scope.add(p)
         const a = await p.promise
           .finally(() => scope.remove(p))
-          .catch(reject)
+          .catch(e => reject(new ForkError(e, name)))
         // stop if the scope was disposed while we were waiting
         if (scope.disposed) return
         ir = i.next(a)
       }
       else if (is(Fork, ir.value)) {
-        const p = runFork(withContext(ir.value.arg.context, ir.value.arg.fx), s)
+        const { fx, context, name } = ir.value.arg
+        const p = runFork(withContext(context, fx), s, name)
         scope.add(p)
         p.promise
           .finally(() => scope.remove(p))
-          .catch(reject)
+          .catch(e => reject(new ForkError(e, name)))
         ir = i.next(p)
       }
-      else if (is(Fail, ir.value)) return reject(ir.value.arg)
-      else return reject(new Error(`Unexpected effect in forked Fx: ${ir.value}`))
+      else if (is(Fail, ir.value)) return reject(new ForkError('Forked task failed', ir.value.arg, name))
+      else return reject(new ForkError('Unexpected effect in forked task', ir.value, name))
     }
     resolve(ir.value as A)
   }).finally(() => scope[Symbol.dispose]()))
 
-  return new Task(promise, scope)
+  return new Task(promise, scope, name)
+}
+
+class ForkError extends Error {
+  constructor(message: string, public readonly cause: unknown, name?: string) {
+    super(`[${name ?? '<anonymous>'}] ${message}`, { cause })
+  }
 }
 
 const acquire = <A>(s: Semaphore, scope: Scope, f: () => Promise<A>) => {
@@ -64,7 +71,7 @@ const acquire = <A>(s: Semaphore, scope: Scope, f: () => Promise<A>) => {
   })
 }
 
-const runProcess = <A>(run: (s: AbortSignal) => Promise<A>) => {
+const runTask = <A>(run: (s: AbortSignal) => Promise<A>) => {
   const s = new AbortController()
   return new Task<A, unknown>(run(s.signal), new AbortControllerDisposable(s))
 }

@@ -53,7 +53,7 @@ export class Handler<E, A> implements Fx<E, A>, Pipeable {
             else ir = i.next(hr.value)
           }
           else if (is(Fork, ir.value))
-            ir = i.next(yield new Fork({ fx: ir.value.arg.fx, context: [...ir.value.arg.context, this] }) as any)
+            ir = i.next(yield new Fork({ ...ir.value.arg, context: [...ir.value.arg.context, this] }) as any)
           else
             ir = i.next(yield ir.value as any)
         }
