@@ -1,6 +1,6 @@
 import { IncomingMessage, Server, ServerResponse, createServer } from 'http'
 
-import { Async, Effect, Env, Fork, Fx, fx, handle, resume } from '../../src'
+import { Async, Effect, Env, Fork, Fx, Resource, fx, handle, resume, sync } from '../../src'
 
 //----------------------------------------------------------------------
 // Http Server example
@@ -25,24 +25,21 @@ export type Connection = Readonly<{ request: IncomingMessage; response: ServerRe
 export const serveNode = <E, A>(f: Fx<E, A>) => fx(function* () {
   const { port } = yield* Env.get<{ port: number }>()
   const server = createServer().listen(port)
+  yield* Resource.finalize(() => sync(() => void server.close()))
 
-  try {
-    return yield* f.pipe(
-      handle(NextRequest, () => fx(function* () {
-        const close = () => server.close()
+  return yield* f.pipe(
+    handle(NextRequest, () => fx(function* () {
+      const close = () => server.close()
 
-        const connection = yield* Async.run((signal) => {
-          signal.addEventListener('abort', close, { once: true })
-          return getNextRequest(server)
-            .finally(() => signal.removeEventListener('abort', close))
-        })
+      const connection = yield* Async.run((signal) => {
+        signal.addEventListener('abort', close, { once: true })
+        return getNextRequest(server)
+          .finally(() => signal.removeEventListener('abort', close))
+      })
 
-        return resume(connection)
-      }))
-    )
-  } finally {
-    server.close()
-  }
+      return resume(connection)
+    }))
+  )
 })
 
 export const runServer = <E, A>(

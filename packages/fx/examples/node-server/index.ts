@@ -1,4 +1,4 @@
-import { Env, Fail, Log, Run, Time, fx } from '../../src'
+import { Env, Fail, Log, Resource, Run, Time, fx } from '../../src'
 
 import { Connection, runServer } from './HttpServer'
 
@@ -20,5 +20,6 @@ runServer(myHandler).pipe(
   Time.builtinDate,
   Env.provide({ port: +port }),
   Fail.catchAll,
+  Resource.scope,
   Run.async
 )

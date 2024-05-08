@@ -6,7 +6,7 @@ import { Async } from '../async'
 import { Fail, Failures } from '../fail'
 
 import { Fork } from './Fork'
-import { Process } from './process'
+import { Task } from './Task'
 import { Scope } from './scope'
 import { Semaphore } from './semaphore'
 
@@ -15,11 +15,11 @@ export const bounded = (maxConcurrency: number) => <const E, const A>(f: Fx<E, A
     return yield* f.pipe(
       handle(Fork, ({ fx, context }) => ok(resume(runFork(withContext(context, fx), s))))
     )
-  }) as Fx<Exclude<E, Async | Fail<any>>, Process<A, Failures<E>>>
+  }) as Fx<Exclude<E, Async | Fail<any>>, Task<A, Failures<E>>>
 
 export const unbounded = bounded(Infinity)
 
-export const runFork = <const E, const A>(f: Fx<E, A>, s: Semaphore): Process<A, Failures<E>> => {
+export const runFork = <const E, const A>(f: Fx<E, A>, s: Semaphore): Task<A, Failures<E>> => {
   const scope = new Scope()
 
   const promise = acquire(s, scope, () => new Promise<A>(async (resolve, reject) => {
@@ -52,7 +52,7 @@ export const runFork = <const E, const A>(f: Fx<E, A>, s: Semaphore): Process<A,
     resolve(ir.value as A)
   }).finally(() => scope[Symbol.dispose]()))
 
-  return new Process(promise, scope)
+  return new Task(promise, scope)
 }
 
 const acquire = <A>(s: Semaphore, scope: Scope, f: () => Promise<A>) => {
@@ -66,7 +66,7 @@ const acquire = <A>(s: Semaphore, scope: Scope, f: () => Promise<A>) => {
 
 const runProcess = <A>(run: (s: AbortSignal) => Promise<A>) => {
   const s = new AbortController()
-  return new Process<A, unknown>(run(s.signal), new AbortControllerDisposable(s))
+  return new Task<A, unknown>(run(s.signal), new AbortControllerDisposable(s))
 }
 
 const withContext = (c: readonly HandlerContext[], f: Fx<unknown, unknown>) =>

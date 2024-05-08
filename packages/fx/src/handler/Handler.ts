@@ -35,7 +35,6 @@ export class Handler<E, A> implements Fx<E, A>, Pipeable {
     public readonly controls: ReadonlyMap<unknown, (e: unknown) => Fx<unknown, Continue<unknown, unknown>>>
   ) { }
 
-  // eslint-disable-next-line prefer-rest-params
   pipe() { return pipe(this, arguments) }
 
   *[Symbol.iterator](): Iterator<E, A> {

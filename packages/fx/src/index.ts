@@ -11,4 +11,4 @@ export * as Log from './effects/log'
 export * as Resource from './effects/resource'
 export * as Time from './effects/time'
 
-export * as Process from './effects/fork/process'
+export * as Task from './effects/fork/Task'

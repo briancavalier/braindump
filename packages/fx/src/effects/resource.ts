@@ -1,4 +1,4 @@
-import { Effect, Fx, fx, is } from '../fx'
+import { Effect, Fx, fx, is, unit } from '../fx'
 import { control, resume } from '../handler'
 
 import { Fail, catchFail, fail } from './fail'
@@ -18,7 +18,9 @@ export const acquire = <const R, const E1, const E2>(
   release: (r: R) => Fx<E2, void>
 ) => new Acquire<E1 | E2>({ acquire, release }).returning<R>()
 
-// Handler to scope resource allocation/release
+export const finalize = <E>(f: () => Fx<E, void>): Fx<Acquire<E>, void> =>
+  acquire(unit, f)
+
 export const scope = <const E, const A>(f: Fx<E, A>) => fx(function* () {
   const resources = [] as Fx<unknown, unknown>[]
   try {
