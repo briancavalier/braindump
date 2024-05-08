@@ -18,9 +18,9 @@ export type ForkContext = Readonly<{
 
 export type EffectsOf<F> = F extends Fx<infer E, unknown> ? E : never
 export type ResultOf<F> = F extends Fx<unknown, infer A> ? A : never
-export type ErrorsOf<E> = E extends Fail<infer F> ? F : never
+export type ErrorsOf<E> = Extract<E, Fail<any>>
 
-export const all = <Fxs extends readonly Fx<unknown, unknown>[]>(fxs: Fxs, name?: string) => fx(function* () {
+export const all = <const Fxs extends readonly Fx<unknown, unknown>[]>(fxs: Fxs, name = 'all') => fx(function* () {
   const ps = [] as T.Task<unknown, unknown>[]
   for (let i = 0; i < fxs.length; i++) ps.push(yield* fork(fxs[i], `${name}:${i}`))
   return T.all(ps, name)
@@ -28,7 +28,7 @@ export const all = <Fxs extends readonly Fx<unknown, unknown>[]>(fxs: Fxs, name?
   readonly [K in keyof Fxs]: ResultOf<Fxs[K]>
 }, ErrorsOf<EffectsOf<Fxs[number]>>>>
 
-export const race = <Fxs extends readonly Fx<unknown, unknown>[]>(fxs: Fxs, name?: string) => fx(function* () {
+export const race = <const Fxs extends readonly Fx<unknown, unknown>[]>(fxs: Fxs, name = 'race') => fx(function* () {
   const ps = [] as T.Task<unknown, unknown>[]
   for (let i = 0; i < fxs.length; i++) ps.push(yield* fork(fxs[i], `${name}:${i}`))
   return T.race(ps, name)

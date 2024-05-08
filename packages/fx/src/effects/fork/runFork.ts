@@ -3,7 +3,7 @@ import { Fx, fx, is, ok } from '../../fx'
 import { Handler, handle, resume } from '../../handler'
 import { HandlerContext } from '../../handler/HandlerContext'
 import { Async } from '../async'
-import { Fail, UnwrapFail } from '../fail'
+import { Fail } from '../fail'
 
 import { Fork } from './Fork'
 import { Task } from './Task'
@@ -15,11 +15,11 @@ export const bounded = (maxConcurrency: number) => <const E, const A>(f: Fx<E, A
     return yield* f.pipe(
       handle(Fork, ({ fx, context, name }) => ok(resume(runFork(withContext(context, fx), s, name))))
     )
-  }) as Fx<Exclude<E, Async | Fail<any>>, Task<A, UnwrapFail<E>>>
+  }) as Fx<Exclude<E, Async | Fail<any>>, Task<A, Extract<E, Fail<any>>>>
 
 export const unbounded = bounded(Infinity)
 
-export const runFork = <const E, const A>(f: Fx<E, A>, s: Semaphore, name = '?'): Task<A, UnwrapFail<E>> => {
+export const runFork = <const E, const A>(f: Fx<E, A>, s: Semaphore, name = '?'): Task<A, Extract<E, Fail<any>>> => {
   const scope = new Scope()
 
   const promise = acquire(s, scope, () => new Promise<A>(async (resolve, reject) => {
@@ -33,7 +33,7 @@ export const runFork = <const E, const A>(f: Fx<E, A>, s: Semaphore, name = '?')
         scope.add(p)
         const a = await p.promise
           .finally(() => scope.remove(p))
-          .catch(e => reject(new ForkError(e, name)))
+          .catch(e => reject(new ForkError('Awaited Async effect failed', e, name)))
         // stop if the scope was disposed while we were waiting
         if (scope.disposed) return
         ir = i.next(a)
@@ -44,7 +44,7 @@ export const runFork = <const E, const A>(f: Fx<E, A>, s: Semaphore, name = '?')
         scope.add(p)
         p.promise
           .finally(() => scope.remove(p))
-          .catch(e => reject(new ForkError(e, name)))
+          .catch(e => reject(new ForkError('Forked subtask failed', e, name)))
         ir = i.next(p)
       }
       else if (is(Fail, ir.value)) return reject(new ForkError('Forked task failed', ir.value.arg, name))
@@ -57,8 +57,8 @@ export const runFork = <const E, const A>(f: Fx<E, A>, s: Semaphore, name = '?')
 }
 
 class ForkError extends Error {
-  constructor(message: string, public readonly cause: unknown, name?: string) {
-    super(`[${name ?? '<anonymous>'}] ${message}`, { cause })
+  constructor(message: string, cause: unknown, public readonly task: string = '<anonymous>') {
+    super(`[${task}] ${message}`, { cause })
   }
 }
 

@@ -4,9 +4,6 @@ import { control, done, resume } from '../handler'
 
 export class Fail<const E> extends Effect<'fx/Fail', E, never> { }
 
-export type WrapFail<E> = E extends never ? never : Fail<E>
-export type UnwrapFail<F> = F extends Fail<infer E> ? E : never
-
 export const fail = <const E>(e: E) => new Fail(e)
 
 export const catchIf = <const F>(match: (x: unknown) => x is F) =>
@@ -26,3 +23,5 @@ export const catchFail = <const E, const A>(f: Fx<E, A>) =>
   f.pipe(
     control(Fail, e => ok(done(new Fail(e))))
    ) as Fx<Exclude<E, Fail<any>>, A | Extract<E, Fail<any>>>
+
+type UnwrapFail<F> = F extends Fail<infer E> ? E : never
