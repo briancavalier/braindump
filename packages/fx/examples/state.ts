@@ -4,8 +4,8 @@ import { inspect } from 'util'
 import { Async, Effect, Fork, Fx, Run, Task, fx, handle, map, ok, resume } from '../src'
 
 // The usual state monad, as an effect
-class Get<A> extends Effect<'State', void, A> { }
-class Set<A> extends Effect<'State', A, void> { }
+class Get<A> extends Effect('State')<void, A> { }
+class Set<A> extends Effect('State')<A, void> { }
 
 const get = <const A>() => new Get<A>()
 const set = <const A>(value: A) => new Set(value)

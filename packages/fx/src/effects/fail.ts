@@ -2,7 +2,7 @@ import { Effect, Fx, fx, ok } from '../fx'
 // eslint-disable-next-line import/no-cycle
 import { control, done, resume } from '../handler'
 
-export class Fail<const E> extends Effect<'fx/Fail', E, never> { }
+export class Fail<const E> extends Effect('fx/Fail')<E, never> { }
 
 export const fail = <const E>(e: E) => new Fail(e)
 

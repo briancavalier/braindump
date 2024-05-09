@@ -9,11 +9,11 @@ import { Effect, Env, fx } from '../../src'
 // -------------------------------------------------------------------
 // #region New effects the game will need
 
-export class Print extends Effect<'Print', string, void> { }
+export class Print extends Effect('Print')<string, void> { }
 
 const print = (s: string) => new Print(s)
 
-export class Read extends Effect<'Read', string, string> { }
+export class Read extends Effect('Read')<string, string> { }
 
 const read = (prompt: string) => new Read(prompt)
 
@@ -22,7 +22,7 @@ export type Range = {
   readonly max: number
 }
 
-export class RandomInt extends Effect<'RandomInt', Range, number> { }
+export class RandomInt extends Effect('RandomInt')<Range, number> { }
 
 const nextInt = (range: Range) => new RandomInt(range)
 

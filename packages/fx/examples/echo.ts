@@ -3,11 +3,11 @@ import { createInterface } from 'node:readline/promises'
 
 import { Async, Effect, Fx, Resource, Run, fx, handle, ok, resume, sync } from '../src'
 
-class Print extends Effect<'Print', string, void> { }
+class Print extends Effect('Print')<string, void> { }
 
 const print = (s: string) => new Print(s)
 
-class Read extends Effect<'Read', string, string> { }
+class Read extends Effect('Read')<string, string> { }
 
 const read = (prompt: string) => new Read(prompt)
 

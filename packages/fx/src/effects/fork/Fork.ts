@@ -5,7 +5,7 @@ import { Fail } from '../fail'
 
 import * as T from './Task'
 
-export class Fork extends Effect<'fx/Fork', ForkContext, T.Task<unknown, unknown>> { }
+export class Fork extends Effect('fx/Fork')<ForkContext, T.Task<unknown, unknown>> { }
 
 export const fork = <const E, const A>(fx: Fx<E, A>, name: string = 'anonymous') =>
   new Fork({ fx, context: [], name }) as Fx<Exclude<E, Async | Fail<any>> | Fork, T.Task<A, ErrorsOf<E>>>

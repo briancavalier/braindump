@@ -3,7 +3,7 @@ import { handle, resume } from '../handler'
 
 // void | E allows the arg to be omitted while
 // still exposing E in the return type
-export class Get<E extends Record<PropertyKey, unknown>> extends Effect<'fx/Env', void, Readonly<E>> { }
+export class Get<E extends Record<PropertyKey, unknown>> extends Effect('fx/Env')<void, Readonly<E>> { }
 
 export const get = <const E extends Record<PropertyKey, unknown>>() =>
   new Get<E>().returning<E>()

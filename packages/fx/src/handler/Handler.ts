@@ -15,16 +15,16 @@ export const done = <const A> (value: A) => ({ done: true, value } as const)
 export const handle = <T extends EffectType, OnEffects> (e: T, f: (e: Arg<T>) => Fx<OnEffects, Resume<Return<T>>>) =>
   <const E, const A>(fx: Fx<E, A>) =>
     (isHandler(fx)
-      ? new Handler(fx, new Map(fx.handlers).set(e, f), fx.controls)
-      : new Handler(fx, new Map().set(e, f), empty)) as Handler<Exclude<E, InstanceType<T>> | OnEffects, A>
+      ? new Handler(fx, new Map(fx.handlers).set(e._fxEffectId, f), fx.controls)
+      : new Handler(fx, new Map().set(e._fxEffectId, f), empty)) as Handler<Exclude<E, InstanceType<T>> | OnEffects, A>
 
 export const control = <T extends EffectType, OnEffects, R = never>(e: T, f: (e: Arg<T>) => Fx<OnEffects, Continue<Return<T>, R>>) =>
   <const E, const A>(fx: Fx<E, A>) =>
     (isHandler(fx)
-      ? new Handler(fx, fx.handlers, new Map(fx.controls).set(e, f))
-      : new Handler(fx, empty, new Map().set(e, f))) as Handler<Exclude<E, InstanceType<T>> | OnEffects, A | R>
+      ? new Handler(fx, fx.handlers, new Map(fx.controls).set(e._fxEffectId, f))
+      : new Handler(fx, empty, new Map().set(e._fxEffectId, f))) as Handler<Exclude<E, InstanceType<T>> | OnEffects, A | R>
 
-export const HandlerTypeId = Symbol()
+export const HandlerTypeId = Symbol('fx/Handler')
 
 export class Handler<E, A> implements Fx<E, A>, Pipeable {
   public readonly _fxTypeId = HandlerTypeId
@@ -46,7 +46,7 @@ export class Handler<E, A> implements Fx<E, A>, Pipeable {
 
       while (!ir.done) {
         if (isEffect(ir.value)) {
-          const handle = handlers.get(ir.value.constructor) ?? controls.get(ir.value.constructor) ?? undefined
+          const handle = handlers.get(ir.value._fxEffectId) ?? controls.get(ir.value._fxEffectId) ?? undefined
           if (handle) {
             const hr: Continue<any, any> = yield* handle(ir.value.arg) as any
             if(hr.done) return hr.value

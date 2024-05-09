@@ -11,7 +11,7 @@ export type Resource<E1, E2, R> = Readonly<{
   release: (r: R) => Fx<E2, void>
 }>
 
-export class Acquire<E> extends Effect<'fx/Resource', Resource<E, E, any>> { }
+export class Acquire<E> extends Effect('fx/Resource')<Resource<E, E, any>> { }
 
 export const acquire = <const R, const E1, const E2>(
   r: Resource<E1, E2, R>

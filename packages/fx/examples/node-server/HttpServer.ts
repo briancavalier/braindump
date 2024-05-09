@@ -10,7 +10,7 @@ import { Async, Effect, Env, Fork, Fx, Resource, fx, handle, resume, sync } from
 
 // #region Http Server effect to get the next incoming request
 
-class NextRequest extends Effect<'HttpServer', void, Connection> { }
+class NextRequest extends Effect('HttpServer')<void, Connection> { }
 
 export const nextRequest = new NextRequest()
 
