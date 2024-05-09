@@ -25,7 +25,7 @@ export type Connection = Readonly<{ request: IncomingMessage; response: ServerRe
 export const serveNode = <E, A>(f: Fx<E, A>) => fx(function* () {
   const { port } = yield* Env.get<{ port: number }>()
   const server = createServer().listen(port)
-  yield* Resource.finalize(() => sync(() => void server.close()))
+  yield* Resource.finalize(sync(() => void server.close()))
 
   return yield* f.pipe(
     handle(NextRequest, () => fx(function* () {

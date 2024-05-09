@@ -1,5 +1,5 @@
 import { setTimeout } from 'node:timers/promises'
-import { Async, Fork, Fx, Run, fx, ok } from '../src'
+import { Async, Fork, Fx, Run, Task, fx, ok } from '../src'
 
 // Concurrent map-reduce
 // Splits the input in half and runs mapReduce on each half concurrently
@@ -10,7 +10,7 @@ const mapReduce = <A, B, EM, ER>(inputs: readonly A[], map: (a: A) => Fx<EM, B>,
   const half = Math.floor(inputs.length / 2)
   const [l, r] = [inputs.slice(0, half), inputs.slice(half)]
 
-  const [rl, rr] = yield* Async.wait(yield* Fork.all([
+  const [rl, rr] = yield* Task.wait(yield* Fork.all([
     mapReduce(l, map, reduce, init),
     mapReduce(r, map, reduce, init)
   ]))

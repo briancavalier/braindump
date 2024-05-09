@@ -52,4 +52,4 @@ export const sync = <const A>(f: () => A) => new G.Sync(f)
 export const unit = ok(undefined)
 
 export const map = <const A, const B>(f: (a: A) => B) =>
-  <const E>(x: Fx<E, A>) => new G.Map(f, x as any)
+  <const E>(x: Fx<E, A>) => new G.Map<E, A, B>(f, x as any) as Fx<E, B>

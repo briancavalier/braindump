@@ -82,7 +82,7 @@ export class Sync<R> implements Generator<never, R>, Pipeable {
 /**
  * Map the yield values of the provided generator.
  */
-export class Map<Y, A, B, N> implements Pipeable {
+export class Map<Y, A, B, N = unknown> implements Pipeable {
     constructor(
     private readonly f: (a: A) => B,
     private readonly i: Generator<Y, A, N>

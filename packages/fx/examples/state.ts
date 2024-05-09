@@ -1,7 +1,7 @@
 import { setTimeout } from 'timers/promises'
 import { inspect } from 'util'
 
-import { Async, Effect, Fork, Fx, Run, fx, handle, map, ok, resume } from '../src'
+import { Async, Effect, Fork, Fx, Run, Task, fx, handle, map, ok, resume } from '../src'
 
 // The usual state monad, as an effect
 class Get<A> extends Effect<'State', void, A> { }
@@ -47,13 +47,13 @@ const f = fx(function* () {
 
 const main1 = fx(function* () {
   const r1 = yield* Fork.all([f, f])
-  const r3 = yield* Async.wait(r1)
+  const r3 = yield* Task.wait(r1)
   return r3
 })
 
 const main2 = fx(function* () {
   const r1 = yield* Fork.all([runState(1, f), runState(1, f)], 'concurrent state')
-  const r3 = yield* Async.wait(r1)
+  const r3 = yield* Task.wait(r1)
   return r3
 })
 

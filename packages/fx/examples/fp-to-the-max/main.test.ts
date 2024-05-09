@@ -54,14 +54,13 @@ describe('main', () => {
     const result = main.pipe(
       handleRandom(secretNumbers),
       handleRead(['Brian', '1', 'y', '2', 'y', '3', 'y', '1', 'n']),
-      x => x,
       handlePrint,
       Env.provide(range),
       Run.sync
     )
 
     assert.deepEqual(result, [
-      'Hello, Brian welcome to the game!',
+      'Hello, Brian. Welcome to the game!',
       'You guessed right, Brian!',
       'You guessed right, Brian!',
       'You guessed right, Brian!',

@@ -22,10 +22,8 @@ const main = fx(function* () {
 const handlePrint = handle(Print, s => ok(resume(console.log(s))))
 
 const handleRead = <E, A>(f: Fx<E, A>) => fx(function* () {
-  const readline = yield* Resource.acquire(
-    ok(createInterface({ input: process.stdin, output: process.stdout })),
-    readline => sync(() => readline.close())
-  )
+  const readline = createInterface({ input: process.stdin, output: process.stdout })
+  yield* Resource.finalize(sync(() => readline.close()))
 
   return yield* f.pipe(
     handle(Read, prompt => fx(function* () {

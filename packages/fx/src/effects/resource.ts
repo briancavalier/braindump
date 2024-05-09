@@ -1,5 +1,5 @@
 import { Effect, Fx, fx, is, unit } from '../fx'
-import { control, resume } from '../handler'
+import { handle, resume } from '../handler'
 
 import { Fail, catchFail, fail } from './fail'
 
@@ -14,18 +14,24 @@ export type Resource<E1, E2, R> = Readonly<{
 export class Acquire<E> extends Effect<'fx/Resource', Resource<E, E, any>> { }
 
 export const acquire = <const R, const E1, const E2>(
-  acquire: Fx<E1, R>,
-  release: (r: R) => Fx<E2, void>
-) => new Acquire<E1 | E2>({ acquire, release }).returning<R>()
+  r: Resource<E1, E2, R>
+) => new Acquire<E1 | E2>(r).returning<R>()
 
-export const finalize = <E>(f: () => Fx<E, void>): Fx<Acquire<E>, void> =>
-  acquire(unit, f)
+export const bracket = <const E1, const E2, const E3, const R, const A>(
+  r: Resource<E1, E2, R>,
+  use: (r: R) => Fx<E3, A>
+) => fx(function* () {
+  return yield* use(yield* acquire(r))
+})
+
+export const finalize = <E>(release: Fx<E, void>) =>
+  acquire({ acquire: unit, release: () => release })
 
 export const scope = <const E, const A>(f: Fx<E, A>) => fx(function* () {
   const resources = [] as Fx<unknown, unknown>[]
   try {
     return yield* f.pipe(
-      control(Acquire, ({ acquire, release }) => fx(function* () {
+      handle(Acquire, ({ acquire, release }) => fx(function* () {
         const a = yield* catchFail(acquire)
 
         if (is(Fail, a)) {

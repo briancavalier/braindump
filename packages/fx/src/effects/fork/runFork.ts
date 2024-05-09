@@ -53,11 +53,11 @@ export const runFork = <const E, const A>(f: Fx<E, A>, s: Semaphore, name = '?')
     resolve(ir.value as A)
   }).finally(() => scope[Symbol.dispose]()))
 
-  return new Task(promise, scope, name)
+  return new Task(promise, scope)
 }
 
 class ForkError extends Error {
-  constructor(message: string, cause: unknown, public readonly task: string = '<anonymous>') {
+  constructor(message: string, cause: unknown, public readonly task: string) {
     super(`[${task}] ${message}`, { cause })
   }
 }

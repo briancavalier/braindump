@@ -18,8 +18,8 @@ const { port = 3000 } = process.env
 runServer(myHandler).pipe(
   Log.console,
   Time.builtinDate,
-  Env.provide({ port: +port }),
   Fail.catchAll,
   Resource.scope,
+  Env.provide({ port: +port }),
   Run.async
 )
