@@ -28,15 +28,15 @@ export const serveNode = <E, A>(f: Fx<E, A>) => fx(function* () {
   yield* Resource.finalize(sync(() => void server.close()))
 
   return yield* f.pipe(
-    handle(NextRequest, () => fx(function* () {
+    handle(NextRequest, () => {
       const close = () => server.close()
 
-      return yield* Async.run((signal) => {
+      return Async.run((signal) => {
         signal.addEventListener('abort', close, { once: true })
         return getNextRequest(server)
           .finally(() => signal.removeEventListener('abort', close))
       })
-    }))
+    })
   )
 })
 

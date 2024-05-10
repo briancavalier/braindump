@@ -17,7 +17,7 @@ const runState = <const E, const A>(s: StateOf<E>, f: Fx<E, A>) => handleState(s
 const handleState = <const E, const A, const R, const S = StateOf<E>>(s: S, r: (a: A, s: S) => R, f: Fx<E, A>) => fx(function* () {
   let state = s
   return yield* f.pipe(
-    handle(Get, () => ok(state)),
+    handle(Get, _ => ok(state)),
     handle(Set, newState => {
       state = newState as S
       return ok(undefined)

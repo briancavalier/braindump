@@ -38,12 +38,12 @@ main.pipe(handleRead, handlePrint, Resource.scope, Run.async)
 //   const printed = [] as string[]
 //   return yield* f.pipe(
 //     handle(Print, s => ok(resume(void printed.push(s)))),
-//     map(() => printed)
+//     map(_ => printed)
 //   )
 // })
 
 // const handleReadPure = ([...inputs]: readonly string[]) =>
-//   handle(Read, () => ok(resume(inputs.shift()!)))
+//   handle(Read, _ => ok(resume(inputs.shift()!)))
 
 // // Run with pure Read and Print effects that only collect input and output
 // main.pipe(handlePrintPure, handleReadPure(['a', 'b', 'c']), Run.async)

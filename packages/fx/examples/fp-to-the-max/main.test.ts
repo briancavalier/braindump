@@ -14,12 +14,12 @@ const handlePrint = <E, A>(f: Fx<E, A>) => fx(function* () {
   const printed = [] as string[]
   return yield* f.pipe(
     handle(Print, s => ok(void printed.push(s))),
-    map(() => printed)
+    map(_ => printed)
   )
 })
 
 const handleRead = ([...inputs]: readonly string[]) =>
-  handle(Read, () => ok(inputs.shift()!))
+  handle(Read, _ => ok(inputs.shift()!))
 
 const handleRandom = ([...values]: readonly number[]) =>
   handle(RandomInt, ({ min, max }) => ok(Math.max(min, Math.min(max, values.shift()!))))
