@@ -1,5 +1,5 @@
 import { Effect, Fx, fx, is, unit } from '../fx'
-import { handle, resume } from '../handler'
+import { handle } from '../handler'
 
 import { Fail, catchFail, fail } from './fail'
 
@@ -40,7 +40,7 @@ export const scope = <const E, const A>(f: Fx<E, A>) => fx(function* () {
         }
 
         resources.push(release(a))
-        return resume(a)
+        return a
       }))
     )
   } finally {

@@ -1,11 +1,11 @@
 import { setTimeout } from 'timers/promises'
 import { inspect } from 'util'
 
-import { Async, Effect, Fork, Fx, Run, Task, fx, handle, map, ok, resume } from '../src'
+import { Async, Effect, Fork, Fx, Run, Task, fx, handle, map, ok } from '../src'
 
 // The usual state monad, as an effect
-class Get<A> extends Effect('State')<void, A> { }
-class Set<A> extends Effect('State')<A, void> { }
+class Get<A> extends Effect('State/Set')<void, A> { }
+class Set<A> extends Effect('State/Get')<A, void> { }
 
 const get = <const A>() => new Get<A>()
 const set = <const A>(value: A) => new Set(value)
@@ -17,10 +17,10 @@ const runState = <const E, const A>(s: StateOf<E>, f: Fx<E, A>) => handleState(s
 const handleState = <const E, const A, const R, const S = StateOf<E>>(s: S, r: (a: A, s: S) => R, f: Fx<E, A>) => fx(function* () {
   let state = s
   return yield* f.pipe(
-    handle(Get, () => ok(resume(state))),
+    handle(Get, () => ok(state)),
     handle(Set, newState => {
       state = newState as S
-      return ok(resume(undefined))
+      return ok(undefined)
     }),
     map(a => r(a, state))
   ) as Fx<Exclude<E, Get<StateOf<E>> | Set<StateOf<E>>>, R>

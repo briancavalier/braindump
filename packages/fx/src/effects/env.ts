@@ -1,5 +1,5 @@
 import { Effect, Fx, fx, ok } from '../fx'
-import { handle, resume } from '../handler'
+import { handle, } from '../handler'
 
 // void | E allows the arg to be omitted while
 // still exposing E in the return type
@@ -19,7 +19,7 @@ type ExcludeEnv<E, S> =
 export const provide = <const S extends Record<PropertyKey, unknown>>(s: S) => <const E, const A>(f: Fx<E, A>) =>
   f.pipe(
     handle(Get, () => fx(function* () {
-      return resume({ ...(yield* get()), ...s })
+      return { ...(yield* get()), ...s }
       }))
   ) as Fx<ExcludeEnv<E, S>, A>
 
@@ -28,9 +28,17 @@ type EachEnv<E> = E extends Get<infer A> ? A : never
 
 export const provideAll = <const S extends Record<PropertyKey, unknown>>(s: S) => <const E, const A>(f: Fx<CheckEnv<S, E>, A>) =>
   f.pipe(
-    handle(Get, () => ok(resume(s)))
+    handle(Get, () => ok(s))
   ) as Fx<ExcludeEnv<E, S>, A>
 
 type U2I<U> = (U extends any ? (k: U) => void : never) extends ((k: infer I) => void) ? I : never
 
-type CheckEnv<S, E> = E extends Get<infer A> ? S extends A ? E : { error: 'Missing Env', missing: { readonly [K in Exclude<keyof A, keyof S>]: A[K] } } : E
+interface TypeError<Message extends string, Context> {
+  message: Message,
+  context: Context
+  readonly _: unique symbol
+}
+
+type CheckEnv<S, E> = E extends Get<infer A> ? S extends A ? E
+  : TypeError<'provideAll missing required elements', { readonly [K in Exclude<keyof A, keyof S>]: A[K] }>
+  : E

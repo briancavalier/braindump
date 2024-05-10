@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 
-import { Env, Fx, Run, fx, handle, map, ok, resume } from '../../src'
+import { Env, Fx, Run, fx, handle, map, ok } from '../../src'
 
 import { Print, RandomInt, Read, checkAnswer, main } from './main'
 
@@ -13,16 +13,16 @@ import { Print, RandomInt, Read, checkAnswer, main } from './main'
 const handlePrint = <E, A>(f: Fx<E, A>) => fx(function* () {
   const printed = [] as string[]
   return yield* f.pipe(
-    handle(Print, s => ok(resume(void printed.push(s)))),
+    handle(Print, s => ok(void printed.push(s))),
     map(() => printed)
   )
 })
 
 const handleRead = ([...inputs]: readonly string[]) =>
-  handle(Read, () => ok(resume(inputs.shift()!)))
+  handle(Read, () => ok(inputs.shift()!))
 
 const handleRandom = ([...values]: readonly number[]) =>
-  handle(RandomInt, ({ min, max }) => ok(resume(Math.max(min, Math.min(max, values.shift()!)))))
+  handle(RandomInt, ({ min, max }) => ok(Math.max(min, Math.min(max, values.shift()!))))
 
 // #endregion
 // -------------------------------------------------------------------

@@ -1,6 +1,6 @@
 import { IncomingMessage, Server, ServerResponse, createServer } from 'http'
 
-import { Async, Effect, Env, Fork, Fx, Resource, fx, handle, resume, sync } from '../../src'
+import { Async, Effect, Env, Fork, Fx, Resource, fx, handle, sync } from '../../src'
 
 //----------------------------------------------------------------------
 // Http Server example
@@ -31,13 +31,11 @@ export const serveNode = <E, A>(f: Fx<E, A>) => fx(function* () {
     handle(NextRequest, () => fx(function* () {
       const close = () => server.close()
 
-      const connection = yield* Async.run((signal) => {
+      return yield* Async.run((signal) => {
         signal.addEventListener('abort', close, { once: true })
         return getNextRequest(server)
           .finally(() => signal.removeEventListener('abort', close))
       })
-
-      return resume(connection)
     }))
   )
 })

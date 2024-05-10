@@ -5,28 +5,23 @@
 
 import { createInterface } from 'node:readline/promises'
 
-import { Async, Env, Fx, Resource, Run, fx, handle, ok, resume, sync } from '../../src'
+import { Async, Env, Fx, Resource, Run, fx, handle, ok, sync } from '../../src'
 
 import { Print, RandomInt, Read, main } from './main'
 
-const handlePrint = handle(Print, s => ok(resume(console.log(s))))
+const handlePrint = handle(Print, s => ok(console.log(s)))
 
 const handleRead = <E, A>(f: Fx<E, A>) => fx(function* () {
   const readline = createInterface({ input: process.stdin, output: process.stdout })
   yield* Resource.finalize(sync(() => readline.close()))
 
   return yield* f.pipe(
-    handle(Read, prompt => fx(function* () {
-      const s = yield* Async.run((signal => readline.question(prompt, { signal })))
-      return resume(s)
-    }))
+    handle(Read, prompt => Async.run((signal => readline.question(prompt, { signal }))))
   )
 })
 
-const handleRandom = handle(RandomInt, ({ min, max }) => {
-  const n = Math.floor(Math.random() * (max - min + 1)) + min
-  return ok(resume(n))
-})
+const handleRandom = handle(RandomInt, ({ min, max }) =>
+  ok(Math.floor(Math.random() * (max - min + 1)) + min))
 
 const { min = 1, max = 10 } = process.env
 

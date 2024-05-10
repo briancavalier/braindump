@@ -1,7 +1,7 @@
 
 import { createInterface } from 'node:readline/promises'
 
-import { Async, Effect, Fx, Resource, Run, fx, handle, ok, resume, sync } from '../src'
+import { Async, Effect, Fx, Resource, Run, fx, handle, ok, sync } from '../src'
 
 class Print extends Effect('Print')<string, void> { }
 
@@ -19,17 +19,15 @@ const main = fx(function* () {
   }
 })
 
-const handlePrint = handle(Print, s => ok(resume(console.log(s))))
+const handlePrint = handle(Print, s => ok(console.log(s)))
 
 const handleRead = <E, A>(f: Fx<E, A>) => fx(function* () {
   const readline = createInterface({ input: process.stdin, output: process.stdout })
   yield* Resource.finalize(sync(() => readline.close()))
 
   return yield* f.pipe(
-    handle(Read, prompt => fx(function* () {
-      const s = yield* Async.run(signal => readline.question(prompt, { signal }))
-      return resume(s)
-    })))
+    handle(Read, prompt => Async.run(signal => readline.question(prompt, { signal })))
+  )
 })
 
 // Run with "real" Read and Print effects

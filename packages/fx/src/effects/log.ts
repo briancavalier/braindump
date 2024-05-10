@@ -1,5 +1,5 @@
-import { Effect, Fx, fx, map } from '../fx'
-import { handle, resume } from '../handler'
+import { Effect, Fx, fx, map, ok } from '../fx'
+import { handle } from '../handler'
 
 import { now } from './time'
 
@@ -26,34 +26,28 @@ export const console = handle(Log, ({ level, msg, data, context }) => fx(functio
     const t = yield* now
     const c = globalThis.console
     switch (level) {
-      case Level.debug: return resume(c.debug(new Date(t), 'DEBUG', msg, { ...data, ...context }))
-      case Level.warn: return resume(c.warn(new Date(t), 'WARN ', msg, { ...data, ...context }))
-      case Level.error: return resume(c.error(new Date(t), 'ERROR', msg, { ...data, ...context }))
-      default: return resume(c.info(new Date(t), 'INFO ', msg, { ...data, ...context }))
+      case Level.debug: return c.debug(new Date(t), 'DEBUG', msg, { ...data, ...context })
+      case Level.warn: return c.warn(new Date(t), 'WARN ', msg, { ...data, ...context })
+      case Level.error: return c.error(new Date(t), 'ERROR', msg, { ...data, ...context })
+      default: return c.info(new Date(t), 'INFO ', msg, { ...data, ...context })
     }
   }))
 
 export const collect = <const E, const A>(f: Fx<E, A>) => fx(function* () {
-  const log = [] as Readonly<{ time: number, msg: LogMessage }>[]
+  const log = [] as LogMessage[]
   return yield* f.pipe(
-    handle(Log, message => fx(function* () {
-      log.push({ time: yield* now, msg: message })
-      return resume(undefined)
-    })),
-    x => x,
+    handle(Log, message => ok(void log.push(message))),
     map(a => [a, log])
   )
 })
 
 export const minLevel = (min: Level) =>
   handle(Log, message => fx(function* () {
-    return resume(message.level >= min ? yield* log(message) : undefined)
+    return message.level >= min ? yield* log(message) : undefined
   }))
 
 export const context = (context: Record<string, unknown>) =>
-  handle(Log, message => fx(function* () {
-    return resume(yield* log({ ...message, context: { ...message.context, ...context } }))
-  }))
+  handle(Log, message => log({ ...message, context: { ...message.context, ...context } }))
 
 export const debug = (msg: string, data?: Record<string, unknown>) => log({ level: Level.debug, msg, data })
 export const info = (msg: string, data?: Record<string, unknown>) => log({ level: Level.info, msg, data })
