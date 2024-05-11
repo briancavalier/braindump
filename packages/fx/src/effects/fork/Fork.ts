@@ -1,4 +1,5 @@
-import { Effect, Fx, fx } from '../../fx'
+import { Effect } from '../../Effect'
+import { Fx, fx } from '../../fx'
 import { HandlerContext } from '../../handler/HandlerContext'
 import { Async } from '../async'
 import { Fail } from '../fail'

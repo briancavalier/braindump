@@ -8,13 +8,12 @@ class Get<A> extends Effect('State/Set')<void, A> { }
 class Set<A> extends Effect('State/Get')<A, void> { }
 
 const get = <const A>() => new Get<A>()
-const set = <const A>(value: A) => new Set(value)
+const set = <const A>(a: A) => new Set(a)
 
-// const withState = <const E, const A>(s: StateOf<E>, f: Fx<E, A>) => handleState(s, (a, s) => [a, s] as const, f)
-const runState = <const E, const A>(s: StateOf<E>, f: Fx<E, A>) => handleState(s, a => a, f)
-// const getState = <const E, const A>(s: StateOf<E>, f: Fx<E, A>) => handleState(s, (_, s) => s, f)
+const runState = <const E, const A>(s: State<E>, f: Fx<E, A>) => withState(s, f).pipe(map(([a]) => a))
+// const getState = <const E, const A>(s: State<E>, f: Fx<E, A>) => withState(s, f).pipe(map(([, s]) => s))
 
-const handleState = <const E, const A, const R, const S = StateOf<E>>(s: S, r: (a: A, s: S) => R, f: Fx<E, A>) => fx(function* () {
+const withState = <const E, const A, const S = State<E>>(s: S, f: Fx<E, A>) => fx(function* () {
   let state = s
   return yield* f.pipe(
     handle(Get, _ => ok(state)),
@@ -22,12 +21,12 @@ const handleState = <const E, const A, const R, const S = StateOf<E>>(s: S, r: (
       state = newState as S
       return ok(undefined)
     }),
-    map(a => r(a, state))
-  ) as Fx<Exclude<E, Get<StateOf<E>> | Set<StateOf<E>>>, R>
+    map(a => [a, state])
+  ) as Fx<Exclude<E, Get<State<E>> | Set<State<E>>>, readonly [A, S]>
 })
 
-type StateOf<E> = U2I<_StateOf<E>>
-type _StateOf<E> = E extends Get<infer S> | Set<infer S> ? S : never
+type State<E> = U2I<StateOf<E>>
+type StateOf<E> = E extends Get<infer S> | Set<infer S> ? S : never
 type U2I<U> = (U extends any ? (k: U) => void : never) extends ((k: infer I) => void) ? I : never
 
 const delay = (ms: number) => Async.run(

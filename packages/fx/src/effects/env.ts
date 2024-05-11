@@ -1,4 +1,5 @@
-import { Effect, Fx, fx, ok } from '../fx'
+import { Effect } from '../Effect'
+import { Fx, fx, ok } from '../fx'
 import { handle } from '../handler'
 import { TypeError } from '../internal/TypeError'
 

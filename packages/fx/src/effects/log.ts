@@ -1,4 +1,5 @@
-import { Effect, Fx, fx, map, ok } from '../fx'
+import { Effect } from '../Effect'
+import { Fx, fx, map, ok } from '../fx'
 import { handle } from '../handler'
 
 import { now } from './time'

@@ -1,6 +1,7 @@
 // eslint-disable-next-line import/no-cycle
+import { EffectType, is, isEffect } from '../Effect'
 import { Fork } from '../effects/fork/Fork'
-import { EffectType, Fx, is, isEffect } from '../fx'
+import { Fx } from '../fx'
 import { Pipeable, pipe } from '../internal/pipe'
 
 type Return<E extends EffectType> = InstanceType<E>['R']
@@ -18,7 +19,7 @@ export const control = <T extends EffectType, OnEffects, R = never>(e: T, f: <A>
       ? new Handler(fx, fx.handlers, new Map(fx.controls).set(e._fxEffectId, f as any))
       : new Handler(fx, empty, new Map().set(e._fxEffectId, f))) as Handler<Exclude<E, InstanceType<T>> | OnEffects, A | R>
 
-export const HandlerTypeId = Symbol('fx/Handler')
+const HandlerTypeId = Symbol('fx/Handler')
 
 export class Handler<E, A> implements Fx<E, A>, Pipeable {
   public readonly _fxTypeId = HandlerTypeId

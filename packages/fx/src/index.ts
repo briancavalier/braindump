@@ -1,3 +1,4 @@
+export * from './Effect'
 export * from './fx'
 export * from './handler'
 

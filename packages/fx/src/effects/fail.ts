@@ -1,4 +1,5 @@
-import { Effect, Fx, fx, ok } from '../fx'
+import { Effect } from '../Effect'
+import { Fx, fx, ok } from '../fx'
 // eslint-disable-next-line import/no-cycle
 import { control } from '../handler'
 

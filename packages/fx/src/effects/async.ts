@@ -1,4 +1,4 @@
-import { Effect } from '../fx'
+import { Effect } from '../Effect'
 
 type Run<A> = (abort: AbortSignal) => Promise<A>
 

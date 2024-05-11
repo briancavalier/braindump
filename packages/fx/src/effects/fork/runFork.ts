@@ -1,6 +1,7 @@
 
-import { Fx, fx, is, ok } from '../../fx'
-import { Handler, handle, resume } from '../../handler'
+import { is } from '../../Effect'
+import { Fx, fx, ok } from '../../fx'
+import { Handler, handle, } from '../../handler'
 import { HandlerContext } from '../../handler/HandlerContext'
 import { Async } from '../async'
 import { Fail } from '../fail'
@@ -13,7 +14,7 @@ import { Semaphore } from './semaphore'
 export const bounded = (maxConcurrency: number) => <const E, const A>(f: Fx<E, A>) => fx(function* () {
     const s = new Semaphore(maxConcurrency)
     return yield* f.pipe(
-      handle(Fork, ({ fx, context, name }) => ok(resume(runFork(withContext(context, fx), s, name))))
+      handle(Fork, ({ fx, context, name }) => ok(runFork(withContext(context, fx), s, name)))
     )
   }) as Fx<Exclude<E, Async | Fail<any>>, Task<A, Extract<E, Fail<any>>>>
 
