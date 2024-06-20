@@ -6,7 +6,6 @@ import { sync as runSync } from '../run'
 
 import { get, provide, provideAll } from './env'
 
-
 describe('Env', () => {
   describe('get', () => {
     it('given environment, returns requested items', () => {
