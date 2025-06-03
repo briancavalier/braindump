@@ -17,22 +17,22 @@ type InferParsed<S, Definitions extends Record<string, unknown>> =
   : S extends Enum ? S['enum'][number]
   : S extends Elements ? readonly ParsedNullable<S['elements'], Definitions>[]
   : S extends Properties ?
-    (keyof S['properties'] & keyof S['optionalProperties']) extends never ?
-      ({ [K in keyof S['properties']]: ParsedNullable<S['properties'][K], Definitions> }
-      & (S extends { readonly optionalProperties: infer O } ? { [K in keyof O]?: ParsedNullable<O[K], Definitions> } : unknown)
-      & (S extends { readonly additionalProperties: true } ? { [k: string]: unknown } : unknown))
-    : OverlappingKeysError<S>
+  (keyof S['properties'] & keyof S['optionalProperties']) extends never ?
+  ({ [K in keyof S['properties']]: ParsedNullable<S['properties'][K], Definitions> }
+    & (S extends { readonly optionalProperties: infer O } ? { [K in keyof O]?: ParsedNullable<O[K], Definitions> } : unknown)
+    & (S extends { readonly additionalProperties: true } ? { [k: string]: unknown } : unknown))
+  : OverlappingKeysError<S>
   : S extends Discriminator ?
-    S['discriminator'] extends PropertiesKeys<S['mapping'][keyof S['mapping']]>
-      ? DiscrimatorPropertyNotAllowedError<S['discriminator']>
-      : {
-        [K in keyof S['mapping']]: ParsedNullable<S['mapping'][K], Definitions> & { readonly [D in S['discriminator']]: K }
-      }[keyof S['mapping']]
+  S['discriminator'] extends PropertiesKeys<S['mapping'][keyof S['mapping']]>
+  ? DiscrimatorPropertyNotAllowedError<S['discriminator']>
+  : {
+    [K in keyof S['mapping']]: ParsedNullable<S['mapping'][K], Definitions> & { readonly [D in S['discriminator']]: K }
+  }[keyof S['mapping']]
   : S extends Values ? { [s: string]: ParsedNullable<S['values'], Definitions> }
   : S extends Ref ?
-    S['ref'] extends keyof Definitions
-      ? ParsedNullable<Definitions[S['ref']], Definitions>
-      : MissingDefinitionError<S['ref']>
+  S['ref'] extends keyof Definitions
+  ? ParsedNullable<Definitions[S['ref']], Definitions>
+  : MissingDefinitionError<S['ref']>
   : S extends Empty ? number | string | boolean | readonly unknown[] | Record<string, unknown>
   : never
 

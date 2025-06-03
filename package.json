@@ -27,8 +27,8 @@
     "prettier": "^3.2.5",
     "tsconfig-paths": "^4.2.0",
     "tslib": "^2.6.2",
-    "tsx": "^4.9.3",
-    "typescript": "^5.4.5"
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3"
   },
   "workspaces": [
     "packages/*"
